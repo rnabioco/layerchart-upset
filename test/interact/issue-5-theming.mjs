@@ -4,7 +4,9 @@ import { chromium } from 'playwright-core';
 import assert from 'node:assert/strict';
 
 const base = process.argv[2] ?? 'http://localhost:5173';
-const browser = await chromium.launch({ channel: 'chrome' });
+const browser = await chromium.launch(
+	process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : { channel: 'chrome' }
+);
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
 await page.goto(`${base}/gallery`, { waitUntil: 'networkidle' });
 await page.waitForSelector('section svg');

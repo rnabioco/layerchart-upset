@@ -4,6 +4,17 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Logarithmic size scales: `scale` (`'linear'` | `'log'` | `'symlog'`, bindable), `setScale` for the set-size
+  panel, `scaleToggle` for a built-in button and `onscalechange(next, previous)`. `controlled` also keeps the
+  toggle from assigning `scale`. Log draws no bar for sizes of 0 (labels stay); `symlog` shows 0. Theme the button
+  with `--upset-control-fg`, `--upset-control-border`, `--upset-control-on`. Default output is unchanged.
+- Browser tests accept `CHROME_PATH` to run against a local Chrome.
+- Draft specs for follow-up work in `specs/`.
+
 ## [0.3.0] - 2026-11-03
 
 ### Added

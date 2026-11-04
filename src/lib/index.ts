@@ -9,5 +9,6 @@ export type {
 	UpSetOptions,
 	UpSetReport,
 	UpSetResult,
-	UpSetMode
+	UpSetMode,
+	UpSetScale
 } from './upset.js';

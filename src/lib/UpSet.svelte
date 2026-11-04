@@ -2,10 +2,14 @@
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
 	import { Axis, Chart, Circle, Layer, Line, Rect, Text } from 'layerchart';
-	import { scaleBand, scaleLinear, type ScaleBand, type ScaleLinear } from 'd3-scale';
+	import { scaleBand, type ScaleBand, type ScaleContinuousNumeric } from 'd3-scale';
 	import {
+		clampSize,
 		computeUpset,
 		fromIntersections,
+		sizeDomain,
+		sizeScale,
+		sizeTicks,
 		reportOf,
 		type Intersection,
 		type PrecomputedIntersection,
@@ -13,7 +17,8 @@
 		type TooltipContext,
 		type UpSetOptions,
 		type UpSetReport,
-		type UpSetResult
+		type UpSetResult,
+		type UpSetScale
 	} from './upset.js';
 
 	interface Props extends UpSetOptions, Omit<HTMLAttributes<HTMLDivElement>, 'color' | 'onselect'> {
@@ -106,7 +111,15 @@
 		onselect?: (selected: Intersection<T> | null, previous: Intersection<T> | null) => void;
 		/** Bindable id of the selected intersection. */
 		selected?: string | null;
-		/** Controlled mode: selecting or pressing Escape only calls `onselect`; `selected` is never assigned internally. */
+		/** Bindable scale of the size bars: `linear` (default), `log`, or `symlog` (shows 0). Drives both panels. */
+		scale?: UpSetScale;
+		/** Scale of the set-size panel when it should differ from `scale`. */
+		setScale?: UpSetScale;
+		/** Render a button that switches between linear and log (symlog when a size is 0). */
+		scaleToggle?: boolean;
+		/** Called when the toggle is pressed; with `controlled` it is the only effect. */
+		onscalechange?: (next: UpSetScale, previous: UpSetScale) => void;
+		/** Controlled mode: selecting, pressing Escape or the scale toggle only calls the callback; `selected` and `scale` are never assigned internally. */
 		controlled?: boolean;
 		/** Total intersections before truncation, when a precomputed list was cut elsewhere. */
 		intersectionsTotal?: number;
@@ -159,6 +172,10 @@
 		onselect,
 		selected = $bindable(null),
 		controlled = false,
+		scale = $bindable('linear'),
+		setScale,
+		scaleToggle = false,
+		onscalechange,
 		intersectionsTotal,
 		onresult,
 		footer,
@@ -224,6 +241,39 @@
 	const ids = $derived([...result.intersections.map((i) => i.id), ...placeholders]);
 	const maxSetSize = $derived(Math.max(1, ...result.sets.map((s) => s.size)));
 	const topSize = $derived(Math.max(1, ...result.intersections.map((i) => i.size)));
+
+	// ---- size scales -------------------------------------------------------------------------
+	const setKind = $derived(setScale ?? scale);
+	const hasZero = $derived(
+		result.intersections.some((i) => i.size <= 0) || (setPanel && result.sets.some((s) => s.size <= 0))
+	);
+	const yMax = $derived(yTicks ? Math.max(topSize, ...yTicks) : topSize);
+	const yDomain = $derived<[number, number | null]>(
+		scale === 'linear' ? [0, yTicks ? yMax : null] : sizeDomain(scale, yMax)
+	);
+	const yTickList = $derived(
+		scale === 'linear'
+			? yTicks
+			: scale === 'log' && yTicks
+				? yTicks.filter((t) => t > 0)
+				: (yTicks ?? sizeTicks(scale, sizeDomain(scale, yMax)[1]))
+	);
+	const setDomain = $derived<[number, number]>(
+		setKind === 'linear'
+			? [maxSetSize, 0]
+			: (() => {
+					const [lo, hi] = sizeDomain(setKind, maxSetSize);
+					return [hi, lo];
+				})()
+	);
+	const setTickList = $derived(setKind === 'linear' ? [] : (sizeTicks(setKind, setDomain[0]) ?? []));
+
+	function toggleScale() {
+		const previous = scale;
+		const next: UpSetScale = scale === 'linear' ? (hasZero ? 'symlog' : 'log') : 'linear';
+		if (!controlled) scale = next;
+		onscalechange?.(next, previous);
+	}
 
 	let containerWidth = $state(0);
 	const cellSize = $derived(
@@ -364,6 +414,7 @@
 	role="group"
 	aria-label={ariaLabel}
 	style:font-size="{fontSize}px"
+	data-scale={scale}
 	style:grid-template-columns="{setPanelWidth}px {labelWidth + matrixWidth}px"
 	style:grid-template-rows="{barHeight + topPad}px {matrixHeight}px"
 	onpointerleave={() => {
@@ -372,6 +423,19 @@
 	}}
 >
 	<div class="corner">{setPanel ? (setLabel ?? '') : ''}</div>
+	{#if scaleToggle}
+		<button
+			type="button"
+			class="upset-scale-toggle"
+			style:left="{setPanelWidth + 4}px"
+			aria-pressed={scale !== 'linear'}
+			data-upset-scale-toggle=""
+			title="Toggle between linear and logarithmic bar scale"
+			onclick={toggleScale}
+		>
+			{scale === 'symlog' ? 'symlog' : 'log'}
+		</button>
+	{/if}
 
 	<!-- Intersection size: vertical bars aligned to matrix columns -->
 	<div class="panel">
@@ -381,26 +445,26 @@
 			xScale={scaleBand().padding(barPadding)}
 			xDomain={ids}
 			y="size"
-			yScale={scaleLinear()}
-			yDomain={[0, yTicks ? Math.max(topSize, ...yTicks) : null]}
-			yNice={!yTicks}
+			yScale={sizeScale(scale)}
+			{yDomain}
+			yNice={scale === 'linear' && !yTicks}
 			padding={{ top: topPad, right: 0, bottom: 0, left: labelWidth }}
 		>
 			{#snippet children({ context })}
 				{@const xs = context.xScale as ScaleBand<string>}
-				{@const ys = context.yScale as ScaleLinear<number, number>}
+				{@const ys = context.yScale as ScaleContinuousNumeric<number, number>}
 				<Layer type="svg">
 					<Axis
 						placement="left"
 						label={intersectionLabel}
-						ticks={yTicks}
+						ticks={yTickList}
 						format={(v: number) => formatSize(v)}
 						grid={{ class: 'upset-grid' }}
 						rule={false}
 					/>
 					{#each result.intersections as d (d.id)}
 						{@const x = xs(d.id) ?? 0}
-						{@const y = ys(d.size)}
+						{@const y = ys(clampSize(scale, d.size))}
 						{@const isSel = selected === d.id}
 						{@const fill = colorOf(d)}
 						<Rect
@@ -457,17 +521,28 @@
 				yScale={scaleBand().padding(barPadding)}
 				yDomain={setNames}
 				x="size"
-				xScale={scaleLinear()}
-				xDomain={[maxSetSize, 0]}
+				xScale={sizeScale(setKind)}
+				xDomain={setDomain}
 				padding={{ top: 0, right: 6, bottom: 0, left: 30 }}
 			>
 				{#snippet children({ context })}
-					{@const xs = context.xScale as ScaleLinear<number, number>}
+					{@const xs = context.xScale as ScaleContinuousNumeric<number, number>}
 					{@const ys = context.yScale as ScaleBand<string>}
 					<Layer type="svg">
+						{#each setTickList as t (t)}
+							<Line x1={xs(t)} x2={xs(t)} y1={0} y2={context.height} class="upset-grid" data-upset-set-tick={t} />
+							<Text
+								value={formatSize(t)}
+								x={xs(t)}
+								y={context.height}
+								dy={-2}
+								textAnchor="middle"
+								class="upset-label upset-set-tick"
+							/>
+						{/each}
 						{#each result.sets as s (s.name)}
 							{@const y = ys(s.name) ?? 0}
-							{@const x = xs(s.size)}
+							{@const x = xs(clampSize(setKind, s.size))}
 							<Rect
 								{x}
 								{y}
@@ -621,6 +696,28 @@
 		align-self: end;
 		padding-left: 4px;
 		opacity: 0.7;
+	}
+	.upset-scale-toggle {
+		position: absolute;
+		top: 0;
+		z-index: 1;
+		font: inherit;
+		font-size: 0.85em;
+		line-height: 1.2;
+		padding: 0 6px;
+		cursor: pointer;
+		border-radius: 3px;
+		color: var(--upset-control-fg, var(--upset-text, currentColor));
+		background: transparent;
+		border: 1px solid var(--upset-control-border, var(--upset-grid, color-mix(in srgb, currentColor 25%, transparent)));
+	}
+	.upset-scale-toggle[aria-pressed='true'] {
+		border-color: var(--upset-control-on, var(--upset-bar, #2b6cb0));
+		color: var(--upset-control-on, var(--upset-bar, #2b6cb0));
+	}
+	.upset :global(.upset-set-tick) {
+		opacity: 0.6;
+		font-size: 0.75em;
 	}
 	.upset-footer {
 		grid-column: 1 / -1;
