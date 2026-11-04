@@ -208,6 +208,14 @@
 				/>
 			</div>
 		</section>
+
+		<section class="themed">
+			<h2>CSS custom properties</h2>
+			<code>no colour props; --upset-bar, --upset-dot-off, ... set on an ancestor</code>
+			<div class="chart">
+				<UpSet {data} sets={genres} minSize={25} />
+			</div>
+		</section>
 	</div>
 </main>
 

@@ -51,7 +51,10 @@
 		setBarWidth?: number;
 		/** Width reserved for set names / the intersection axis, px. */
 		labelWidth?: number;
-		/** Color of bars and active matrix dots; a function colors each intersection individually. */
+		/**
+		 * Color of bars and active matrix dots; a function colors each intersection individually.
+		 * Unset: the `--upset-bar` CSS custom property, then `#2b6cb0`.
+		 */
 		color?: string | ((intersection: Intersection<T>) => string);
 		/** Per-set colors (set-size bars and, for single-set intersections, the intersection). */
 		setColors?: Record<string, string>;
@@ -82,7 +85,7 @@
 		onhover?: (intersection: Intersection<T> | null) => void;
 		/** Accessible name of the whole plot. */
 		'aria-label'?: string;
-		/** Color of inactive matrix dots. */
+		/** Color of inactive matrix dots. Unset: `--upset-dot-off`, then `#d4d4d8`. */
 		inactiveColor?: string;
 		/** Show size labels above intersection bars. */
 		showLabels?: boolean;
@@ -112,7 +115,7 @@
 		barHeight = 200,
 		setBarWidth = 150,
 		labelWidth = 120,
-		color = '#2b6cb0',
+		color,
 		setColors,
 		highlightColor,
 		dimOpacity = 0.3,
@@ -128,7 +131,7 @@
 		tooltip,
 		onhover,
 		'aria-label': ariaLabel = 'UpSet plot',
-		inactiveColor = '#d4d4d8',
+		inactiveColor,
 		showLabels = true,
 		stripes = true,
 		onselect,
@@ -196,12 +199,14 @@
 	const focus = $derived(hovered ?? focused ?? selected);
 	const opacity = (id: string) => (focus && focus !== id ? dimOpacity : 1);
 
-	function colorOf(i: Intersection<T>): string {
+	/** Color a prop dictates for this intersection; undefined leaves it to CSS (custom properties). */
+	function colorOf(i: Intersection<T>): string | undefined {
 		if (selected === i.id && highlightColor) return highlightColor;
 		if (i.degree === 1 && setColors?.[i.sets[0]]) return setColors[i.sets[0]];
 		return typeof color === 'function' ? color(i) : color;
 	}
-	const baseColor = $derived(typeof color === 'function' ? '#2b6cb0' : color);
+	/** Class that hands a mark's colour to CSS; empty when a prop sets it inline. */
+	const themed = (inline: string | undefined, cls: string) => (inline === undefined ? cls : '');
 
 	/** Display name of a set (no truncation or marker): used in tooltips and aria labels. */
 	const labelOf = (name: string) =>
@@ -332,24 +337,25 @@
 						label={intersectionLabel}
 						ticks={yTicks}
 						format={(v: number) => formatSize(v)}
-						grid={{ style: 'stroke: currentColor; stroke-opacity: 0.12' }}
+						grid={{ class: 'upset-grid' }}
 						rule={false}
 					/>
 					{#each result.intersections as d (d.id)}
 						{@const x = xs(d.id) ?? 0}
 						{@const y = ys(d.size)}
 						{@const isSel = selected === d.id}
+						{@const fill = colorOf(d)}
 						<Rect
 							{x}
 							{y}
 							width={xs.bandwidth()}
 							height={Math.max(0, context.height - y)}
-							fill={colorOf(d)}
+							{fill}
 							fillOpacity={opacity(d.id)}
 							stroke={isSel ? 'currentColor' : 'none'}
 							strokeWidth={isSel ? 2 : 0}
 							corners={[barRadius, barRadius, 0, 0]}
-							class="clickable upset-bar"
+							class="clickable upset-bar {themed(fill, isSel ? 'upset-bar-selected' : 'upset-bar-fill')}"
 							role="button"
 							tabindex={0}
 							aria-label={describe(d)}
@@ -409,7 +415,8 @@
 								{y}
 								width={Math.max(0, context.width - x)}
 								height={ys.bandwidth()}
-								fill={setColors?.[s.name] ?? baseColor}
+								fill={setColors?.[s.name] ?? (typeof color === 'string' ? color : undefined)}
+								class={themed(setColors?.[s.name] ?? (typeof color === 'string' ? color : undefined), 'upset-bar-fill')}
 								corners={[barRadius, 0, 0, barRadius]}
 								data-upset-set-bar={s.name}
 								data-n={s.size}
@@ -460,8 +467,7 @@
 								{y}
 								width={labelWidth + matrixWidth}
 								height={h}
-								fill="currentColor"
-								fillOpacity={0.06}
+								class="upset-stripe"
 							/>
 						{/if}
 						<Text
@@ -478,6 +484,8 @@
 
 					{#each result.intersections as d (d.id)}
 						{@const cx = (xs(d.id) ?? 0) + w / 2}
+						{@const dot = colorOf(d)}
+						{@const dotClass = selected === d.id ? 'upset-on-selected' : 'upset-on'}
 						{@const rows = d.sets.map((s) => setNames.indexOf(s))}
 						{@const top = Math.min(...rows)}
 						{@const bottom = Math.max(...rows)}
@@ -499,7 +507,8 @@
 									x2={cx}
 									y1={top * h + h / 2}
 									y2={bottom * h + h / 2}
-									stroke={colorOf(d)}
+									stroke={dot}
+									class={themed(dot, dotClass)}
 									strokeWidth={connectorWidth}
 									opacity={opacity(d.id)}
 								/>
@@ -510,7 +519,8 @@
 									{cx}
 									cy={(ys(name) ?? 0) + h / 2}
 									r={Math.min(w, h) * dotRadius}
-									fill={on ? colorOf(d) : inactiveColor}
+									fill={on ? dot : inactiveColor}
+									class={on ? themed(dot, dotClass) : themed(inactiveColor, 'upset-off')}
 									fillOpacity={on ? opacity(d.id) : 1}
 								/>
 							{/each}
@@ -557,11 +567,40 @@
 	}
 	.upset :global(.upset-label) {
 		font-size: 0.92em;
-		fill: currentColor;
+		fill: var(--upset-text, currentColor);
 	}
 	.upset :global(.upset-set-name) {
 		font-size: 1.08em;
-		fill: currentColor;
+		fill: var(--upset-text, currentColor);
+	}
+	/* Colours that no prop dictates come from custom properties (fallbacks = the old defaults). */
+	.upset :global(.upset-bar-fill) {
+		fill: var(--upset-bar, #2b6cb0);
+	}
+	.upset :global(.upset-bar-selected) {
+		fill: var(--upset-bar-selected, var(--upset-bar, #2b6cb0));
+	}
+	.upset :global(circle.upset-on) {
+		fill: var(--upset-dot-on, var(--upset-bar, #2b6cb0));
+	}
+	.upset :global(line.upset-on) {
+		stroke: var(--upset-dot-on, var(--upset-bar, #2b6cb0));
+	}
+	.upset :global(circle.upset-on-selected) {
+		fill: var(--upset-bar-selected, var(--upset-dot-on, var(--upset-bar, #2b6cb0)));
+	}
+	.upset :global(line.upset-on-selected) {
+		stroke: var(--upset-bar-selected, var(--upset-dot-on, var(--upset-bar, #2b6cb0)));
+	}
+	.upset :global(.upset-off) {
+		fill: var(--upset-dot-off, #d4d4d8);
+	}
+	/* Translucent mixes keep the old 12% / 6% opacity while the property is the final colour. */
+	.upset :global(.upset-grid) {
+		stroke: var(--upset-grid, color-mix(in srgb, currentColor 12%, transparent));
+	}
+	.upset :global(.upset-stripe) {
+		fill: var(--upset-stripe, color-mix(in srgb, currentColor 6%, transparent));
 	}
 	.upset-tooltip {
 		position: absolute;
