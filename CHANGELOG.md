@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-11-03
+
+### Added
+
+- MIT license (`LICENSE`, shipped in the package), plus `license`, `repository`, `homepage` and
+  `bugs` in `package.json`, so consumers that audit third-party licences can build with this package.
+
 ## [0.2.0] - 2026-11-03
 
 ### Added
@@ -49,5 +56,6 @@ Initial release.
   GitHub Pages.
 - CI (type check, unit tests, build + publint) and Dependabot for npm and GitHub Actions.
 
+[0.2.1]: https://github.com/rnabioco/layerchart-upset/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rnabioco/layerchart-upset/releases/tag/v0.1.0

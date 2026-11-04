@@ -69,3 +69,7 @@ Run `npm run dev` for the demo page.
 ## Development
 
 `npm run check`, `npm test` and `npm run build` run in CI on every push and PR.
+
+## License
+
+[MIT](LICENSE)
