@@ -154,7 +154,7 @@
 
 		<section class="dark">
 			<h2>Dark theme</h2>
-			<code>color="#63b3ed" inactiveColor="#3b4252" + dark background</code>
+			<code>color="#63b3ed" inactiveColor="#3b4252" highlightColor="#f6ad55" bind:selected</code>
 			<div class="chart">
 				<UpSet
 					{data}
@@ -209,6 +209,10 @@
 	}
 	.chart {
 		padding-top: 0.5rem;
+	}
+	.dark .chart {
+		width: max-content;
+		padding: 1rem;
 	}
 	.dark {
 		background: #1a202c;

@@ -1,0 +1,12 @@
+[project]
+site_name = "layerchart-upset"
+site_description = "UpSet plots for Svelte, built on LayerChart"
+site_url = "https://rnabioco.github.io/layerchart-upset/"
+repo_url = "https://github.com/rnabioco/layerchart-upset"
+nav = [
+  { "Home" = "index.md" },
+  { "Gallery" = "gallery.md" },
+]
+
+[project.theme]
+features = ["navigation.top", "content.code.copy"]
