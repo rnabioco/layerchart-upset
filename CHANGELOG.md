@@ -4,6 +4,33 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `controlled` prop: when true, clicking, Enter/Space and Esc only call `onselect` and never assign `selected`, so the
+  highlight, `aria-pressed` and outline follow the `selected` prop alone. Default `false` keeps today's behaviour,
+  including `bind:selected` (#3).
+- `onselect` now receives the intersection that was cleared (or previously selected) as a second argument:
+  `onselect(selected, previous)`. Pressing the selected bar or Esc calls `onselect(null, previous)`. One-argument
+  callers are unaffected (#4).
+- Theme through CSS custom properties: `--upset-bar`, `--upset-bar-selected`, `--upset-dot-on`, `--upset-dot-off`,
+  `--upset-text`, `--upset-grid`, `--upset-stripe`. A prop wins, then the property, then the previous default, so
+  rendering is unchanged when nothing is set (#5).
+- Report what `limit` and the size/degree filters hid: `onresult({ shown, total, hidden })` and an optional `footer`
+  snippet; `UpSetResult.totalIntersections`; `intersectionsTotal` for precomputed input; new exports `reportOf` and
+  `UpSetReport` (#6).
+- `maxWidth` (px or CSS length) scrolls wide plots inside their own wrapper; `fit` with `minCellSize` (default 12)
+  shrinks `cellSize` to the container. Keyboard focus scrolls an off-screen bar into view (#7).
+- Interaction tests for each of the above; `npm run test:interact` runs every `test/interact/*.mjs`.
+
+### Changed
+
+- `color` and `inactiveColor` default to `undefined` (the same colours now come from CSS fallbacks).
+- Grid lines and row stripes are coloured by `currentColor` at 12% / 6% alpha in the colour itself rather than via
+  `stroke-opacity` / `fill-opacity`; rendering is identical.
+- `UpSet` renders a `div.upset-scroll` wrapper around `.upset`; `class` and extra attributes still go on `.upset`.
+
 ## [0.2.1] - 2026-11-03
 
 ### Added
