@@ -9,7 +9,7 @@
 		"prepack": "svelte-kit sync && svelte-package && publint",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"test": "vitest run"
+		"test": "vitest run src"
 	},
 	"files": [
 		"dist",
@@ -34,7 +34,7 @@
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^8.0.0",
 		"@sveltejs/kit": "^3.0.0",
-		"@sveltejs/package": "^2.5.8",
+		"@sveltejs/package": "^3.0.2",
 		"@sveltejs/vite-plugin-svelte": "^7.2.0",
 		"@types/d3-array": "^3.2.2",
 		"@types/d3-scale": "^4.0.9",
@@ -56,5 +56,8 @@
 		"d3-array": "^3.2.5",
 		"d3-scale": "^4.0.3",
 		"layerchart": "^2.9.2"
+	},
+	"overrides": {
+		"@sveltejs/kit": "$@sveltejs/kit"
 	}
 }
