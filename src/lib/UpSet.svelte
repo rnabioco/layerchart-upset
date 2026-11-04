@@ -88,8 +88,11 @@
 		showLabels?: boolean;
 		/** Alternate row shading in the matrix. */
 		stripes?: boolean;
-		/** Called when an intersection is selected by click, Enter or Space (null when deselected). */
-		onselect?: (selected: Intersection<T> | null) => void;
+		/**
+		 * Called when the selection changes (null when deselected). `previous` is the intersection
+		 * that was selected before (null if none, or if it is no longer among the intersections).
+		 */
+		onselect?: (selected: Intersection<T> | null, previous: Intersection<T> | null) => void;
 		/** Bindable id of the selected intersection. */
 		selected?: string | null;
 		/** Controlled mode: selecting or pressing Escape only calls `onselect`; `selected` is never assigned internally. */
@@ -223,9 +226,10 @@
 	};
 
 	function select(i: Intersection<T>) {
+		const previous = result.intersections.find((d) => d.id === selected) ?? null;
 		const next = selected === i.id ? null : i.id;
 		if (!controlled) selected = next;
-		onselect?.(next ? i : null);
+		onselect?.(next ? i : null, previous);
 	}
 
 	// ---- tooltip -------------------------------------------------------------------------
@@ -268,8 +272,9 @@
 		}
 		if (e.key === 'Escape') {
 			if (selected != null) {
+				const previous = result.intersections.find((d) => d.id === selected) ?? null;
 				if (!controlled) selected = null;
-				onselect?.(null);
+				onselect?.(null, previous);
 			}
 			return;
 		}

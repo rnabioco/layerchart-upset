@@ -27,3 +27,4 @@ vite.config.ts.timestamp-*
 /docs/gallery.md
 /docs/assets/gallery
 /site
+.claude/worktrees/
