@@ -97,6 +97,16 @@
 			title: 'Controlled selection',
 			desc: 'The owner holds the selection; clicks only notify through onselect.',
 			props: `controlled selected={pick} onselect={(i) => …}`
+		},
+		{
+			title: 'maxWidth: scroll inside the root',
+			desc: '40 intersections capped at 600px; the plot scrolls horizontally.',
+			props: `maxWidth={600} limit={40}`
+		},
+		{
+			title: 'fit: shrink cells to the container',
+			desc: '20 columns in a 500px container; cells shrink toward minCellSize.',
+			props: `fit minCellSize={12} limit={20}`
 		}
 	] as const;
 </script>
@@ -209,6 +219,12 @@
 						/>
 						<small data-calls>calls: {controlledCalls.map((c) => c ?? 'null').join(',')}</small>
 						<button type="button" data-set-pick onclick={() => (controlledPick = 'a')}>select a</button>
+					{:else if ex.title.startsWith('maxWidth')}
+						<UpSet {data} sets={genres} maxWidth={600} limit={40} data-upset="maxwidth" />
+					{:else if ex.title.startsWith('fit:')}
+						<div style="width: 500px">
+							<UpSet {data} sets={genres} fit limit={20} data-upset="fit" />
+						</div>
 					{/if}
 				</div>
 			</section>
