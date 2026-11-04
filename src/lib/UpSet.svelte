@@ -16,8 +16,29 @@
 		setBarWidth?: number;
 		/** Width reserved for set names / the intersection axis, px. */
 		labelWidth?: number;
-		/** Color of bars and active matrix dots. */
-		color?: string;
+		/** Color of bars and active matrix dots; a function colors each intersection individually. */
+		color?: string | ((intersection: Intersection<T>) => string);
+		/** Per-set colors (set-size bars and, for single-set intersections, the intersection). */
+		setColors?: Record<string, string>;
+		/** Color used for the selected intersection. Defaults to `color`. */
+		highlightColor?: string;
+		/** Opacity of non-focused columns while hovering/selecting (1 disables dimming). */
+		dimOpacity?: number;
+		/** Matrix dot radius as a fraction of the cell size. */
+		dotRadius?: number;
+		/** Width of the matrix connector lines, px. */
+		connectorWidth?: number;
+		/** Padding between bars, 0-1. */
+		barPadding?: number;
+		/** Rounded bar corners, px. */
+		barRadius?: number;
+		/** Font size of labels, px. */
+		fontSize?: number;
+		/** Axis titles; omit to hide. */
+		intersectionLabel?: string;
+		setLabel?: string;
+		/** Native hover tooltips on intersection columns and set bars. */
+		tooltips?: boolean;
 		/** Color of inactive matrix dots. */
 		inactiveColor?: string;
 		/** Show size labels above intersection bars. */
@@ -38,6 +59,17 @@
 		setBarWidth = 150,
 		labelWidth = 120,
 		color = '#2b6cb0',
+		setColors,
+		highlightColor,
+		dimOpacity = 0.3,
+		dotRadius = 0.3,
+		connectorWidth = 3,
+		barPadding = 0.3,
+		barRadius = 2,
+		fontSize = 12,
+		intersectionLabel,
+		setLabel,
+		tooltips = true,
 		inactiveColor = '#d4d4d8',
 		showLabels = true,
 		stripes = true,
@@ -80,7 +112,15 @@
 
 	let hovered = $state<string | null>(null);
 	const focus = $derived(hovered ?? selected);
-	const opacity = (id: string) => (focus && focus !== id ? 0.3 : 1);
+	const opacity = (id: string) => (focus && focus !== id ? dimOpacity : 1);
+
+	function colorOf(i: Intersection<T>): string {
+		if (selected === i.id && highlightColor) return highlightColor;
+		if (i.degree === 1 && setColors?.[i.sets[0]]) return setColors[i.sets[0]];
+		return typeof color === 'function' ? color(i) : color;
+	}
+	const baseColor = $derived(typeof color === 'function' ? '#2b6cb0' : color);
+	const describe = (i: Intersection<T>) => `${i.sets.join(' ∩ ')}: ${i.size}`;
 
 	function select(i: Intersection<T>) {
 		selected = selected === i.id ? null : i.id;
@@ -90,17 +130,18 @@
 
 <div
 	class="upset"
+	style:font-size="{fontSize}px"
 	style:grid-template-columns="{setBarWidth}px {labelWidth + matrixWidth}px"
 	style:grid-template-rows="{barHeight + topPad}px {matrixHeight}px"
 >
-	<div></div>
+	<div class="corner">{setLabel ?? ''}</div>
 
 	<!-- Intersection size: vertical bars aligned to matrix columns -->
 	<div class="panel">
 		<Chart
 			data={result.intersections}
 			x="id"
-			xScale={scaleBand().padding(0.3)}
+			xScale={scaleBand().padding(barPadding)}
 			xDomain={ids}
 			y="size"
 			yScale={scaleLinear()}
@@ -114,6 +155,7 @@
 				<Layer type="svg">
 					<Axis
 						placement="left"
+						label={intersectionLabel}
 						grid={{ style: 'stroke: currentColor; stroke-opacity: 0.12' }}
 						rule={false}
 					/>
@@ -125,13 +167,16 @@
 							{y}
 							width={xs.bandwidth()}
 							height={Math.max(0, context.height - y)}
-							fill={color}
+							fill={colorOf(d)}
 							fillOpacity={opacity(d.id)}
+							corners={[barRadius, barRadius, 0, 0]}
 							class="clickable"
 							onclick={() => select(d)}
 							onpointerenter={() => (hovered = d.id)}
 							onpointerleave={() => (hovered = null)}
-						/>
+						>
+							{#if tooltips}<title>{describe(d)}</title>{/if}
+						</Rect>
 						{#if showLabels}
 							<Text
 								value={String(d.size)}
@@ -153,7 +198,7 @@
 		<Chart
 			data={result.sets}
 			y="name"
-			yScale={scaleBand().padding(0.3)}
+			yScale={scaleBand().padding(barPadding)}
 			yDomain={setNames}
 			x="size"
 			xScale={scaleLinear()}
@@ -172,8 +217,11 @@
 							{y}
 							width={Math.max(0, context.width - x)}
 							height={ys.bandwidth()}
-							fill={color}
-						/>
+							fill={setColors?.[s.name] ?? baseColor}
+							corners={[barRadius, 0, 0, barRadius]}
+						>
+							{#if tooltips}<title>{s.name}: {s.size}</title>{/if}
+						</Rect>
 						<Text
 							value={String(s.size)}
 							x={x - 4}
@@ -243,6 +291,7 @@
 							onpointerenter={() => (hovered = d.id)}
 							onpointerleave={() => (hovered = null)}
 						>
+							{#if tooltips}<title>{describe(d)}</title>{/if}
 							<Rect x={cx - w / 2} y={0} width={w} height={context.height} fill="transparent" />
 							{#if d.degree > 1}
 								<Line
@@ -250,8 +299,8 @@
 									x2={cx}
 									y1={top * h + h / 2}
 									y2={bottom * h + h / 2}
-									stroke={color}
-									strokeWidth={3}
+									stroke={colorOf(d)}
+									strokeWidth={connectorWidth}
 									opacity={opacity(d.id)}
 								/>
 							{/if}
@@ -260,8 +309,8 @@
 								<Circle
 									{cx}
 									cy={(ys(name) ?? 0) + h / 2}
-									r={Math.min(w, h) * 0.3}
-									fill={on ? color : inactiveColor}
+									r={Math.min(w, h) * dotRadius}
+									fill={on ? colorOf(d) : inactiveColor}
 									fillOpacity={on ? opacity(d.id) : 1}
 								/>
 							{/each}
@@ -276,8 +325,12 @@
 <style>
 	.upset {
 		display: grid;
-		font-size: 12px;
 		width: max-content;
+	}
+	.corner {
+		align-self: end;
+		padding-left: 4px;
+		opacity: 0.7;
 	}
 	.panel {
 		position: relative;
@@ -288,11 +341,11 @@
 		cursor: pointer;
 	}
 	.upset :global(.upset-label) {
-		font-size: 11px;
+		font-size: 0.92em;
 		fill: currentColor;
 	}
 	.upset :global(.upset-set-name) {
-		font-size: 13px;
+		font-size: 1.08em;
 		fill: currentColor;
 	}
 </style>
