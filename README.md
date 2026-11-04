@@ -46,7 +46,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 |---|---|---|
 | `data`, `sets` | – | rows with boolean membership columns, and the column names |
 | `mode` | `'distinct'` | `distinct` (exclusive), `intersect` (inclusive), `union` |
-| `sortIntersectionsBy` / `Order` | `cardinality` / `descending` | or `degree`, `none` |
+| `sortIntersectionsBy` / `Order` | `cardinality` / `descending` | or `degree`, `sets` (matrix row order), `none` |
 | `sortSetsBy` / `Order` | `cardinality` / `descending` | |
 | `minSize` `maxSize` `minDegree` `maxDegree` `limit` | – | filter intersections |
 | `cellSize` `barHeight` `setBarWidth` `labelWidth` | 28 200 150 120 | layout, px |

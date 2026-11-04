@@ -3,7 +3,9 @@ import {
 	LOG_FLOOR,
 	clampSize,
 	computeUpset,
+	membersOf,
 	reportOf,
+	toCSV,
 	sizeDomain,
 	sizeScale,
 	sizeTicks,
@@ -170,6 +172,31 @@ describe('size scales', () => {
 	});
 });
 
+describe('export helpers', () => {
+	const r = computeUpset(data, sets);
+
+	it('to_csv_escapes_quotes', () => {
+		const rows = [{ A: true, name: 'say "hi", ok' }];
+		const c = computeUpset(rows, ['A']);
+		const csv = toCSV(c, { items: (x) => String(x.name) });
+		expect(csv).toBe('id,degree,size,A,items\nA,1,1,1,"say ""hi"", ok"\n');
+	});
+
+	it('to_csv_has_a_column_per_set', () => {
+		const lines = toCSV(r).trim().split('\n');
+		expect(lines[0]).toBe(['id', 'degree', 'size', ...r.sets.map((s) => s.name)].join(','));
+		expect(lines.length).toBe(r.intersections.length + 1);
+		const first = r.intersections[0];
+		expect(lines[1].split(',').slice(0, 3)).toEqual([first.id, String(first.degree), String(first.size)]);
+	});
+
+	it('members_of_unknown_id_is_empty', () => {
+		expect(membersOf(r, 'nope')).toEqual([]);
+		const g = r.intersections[0];
+		expect(membersOf(r, g.id)).toEqual(g.items);
+	});
+});
+
 describe('computeUpset modes against a brute-force reference', () => {
 	// The original algorithm: every row against every non-empty combination of sets.
 	function reference(rows: Record<string, boolean>[], names: string[], mode: 'distinct' | 'intersect' | 'union') {
@@ -217,6 +244,30 @@ describe('computeUpset modes against a brute-force reference', () => {
 		const k = computeUpset(rows, names, { mode: 'intersect' });
 		expect(r.intersections.every((g) => g.items.length === 0)).toBe(true);
 		expect(r.intersections.map((g) => [g.id, g.size])).toEqual(k.intersections.map((g) => [g.id, g.size]));
+	});
+
+	it('sort_by_sets_orders_by_set_rank', () => {
+		const r = computeUpset(rows, names, { mode: 'intersect', sortIntersectionsBy: 'sets', sortSetsBy: 'none' });
+		const ids = r.intersections.map((g) => g.id);
+		expect(ids.slice(0, 5)).toEqual(['A', 'A&B', 'A&B&C', 'A&B&C&D', 'A&B&C&D&E']);
+		expect(ids.indexOf('A&B&C&D&E')).toBeLessThan(ids.indexOf('A&B&C&E'));
+		expect(ids[ids.length - 1]).toBe('E');
+	});
+
+	it('sort_by_sets_respects_order_flag', () => {
+		const down = computeUpset(rows, names, { mode: 'intersect', sortIntersectionsBy: 'sets', sortSetsBy: 'none' });
+		const up = computeUpset(rows, names, {
+			mode: 'intersect',
+			sortIntersectionsBy: 'sets',
+			sortIntersectionsOrder: 'ascending',
+			sortSetsBy: 'none'
+		});
+		expect(up.intersections.map((g) => g.id)).toEqual(down.intersections.map((g) => g.id).reverse());
+		// precomputed input follows the given set order too
+		const p = fromIntersections(['B', 'A'], [{ sets: ['A'], size: 1 }, { sets: ['B'], size: 1 }], {
+			sortIntersectionsBy: 'sets'
+		});
+		expect(p.intersections.map((g) => g.id)).toEqual(['B', 'A']);
 	});
 
 	it('intersect_scales_to_many_sets', () => {

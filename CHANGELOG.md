@@ -16,6 +16,10 @@ adheres to [Semantic Versioning](https://semver.org/).
 - Draft specs for follow-up work in `specs/`.
 - `keepItems` option (default `true`): `false` leaves each intersection's `items` empty, for large inputs where only
   counts matter.
+- `sortIntersectionsBy: 'sets'` orders intersections by set rank (the matrix row order): A, A&B, A&B&C, A&C, B, …
+  `descending` (default) is that order, `ascending` reverses it.
+- `toCSV(result, { items })` and `membersOf(result, id)` helpers for getting the data behind the bars; they return
+  values and never write files.
 
 ### Changed
 
