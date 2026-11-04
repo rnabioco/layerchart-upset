@@ -48,7 +48,9 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `mode` | `'distinct'` | `distinct` (exclusive), `intersect` (inclusive), `union` |
 | `sortIntersectionsBy` / `Order` | `cardinality` / `descending` | or `degree`, `sets` (matrix row order), `none` |
 | `sortSetsBy` / `Order` | `cardinality` / `descending` | |
-| `minSize` `maxSize` `minDegree` `maxDegree` `limit` | – | filter intersections |
+| `minSize` `maxSize` `minDegree` `maxDegree` `limit` (bindable) | – | filter intersections |
+| `hiddenSets` (bindable) | `[]` | sets removed from the plot; with `data` the intersections are recomputed without them |
+| `filterControls` `onfilterchange(filters, previous)` | `false` | a bar above the plot to change min size, degree, limit and which sets show |
 | `cellSize` `barHeight` `setBarWidth` `labelWidth` | 28 200 150 120 | layout, px |
 | `color` | `#2b6cb0` | string, or `(intersection) => string` to color each column |
 | `setColors`, `highlightColor` | – | per-set colors; color of the selected column |

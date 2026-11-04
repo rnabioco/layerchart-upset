@@ -7,6 +7,7 @@ export type {
 	PrecomputedOptions,
 	SetInfo,
 	TooltipContext,
+	UpSetFilters,
 	UpSetOptions,
 	UpSetReport,
 	UpSetResult,
