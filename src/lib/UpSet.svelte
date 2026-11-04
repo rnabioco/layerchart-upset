@@ -45,6 +45,12 @@
 		formatSize?: (n: number) => string;
 		/** Width/height of one matrix cell, px. */
 		cellSize?: number;
+		/** Cap the plot's width (number = px, or any CSS length); it scrolls horizontally inside. */
+		maxWidth?: number | string;
+		/** Shrink `cellSize` toward `minCellSize` so the matrix fits the container's width. */
+		fit?: boolean;
+		/** Smallest cell size `fit` shrinks to, px; below it the plot scrolls. */
+		minCellSize?: number;
 		/** Height of the intersection-size panel, px. */
 		barHeight?: number;
 		/** Width of the set-size panel, px. */
@@ -108,7 +114,10 @@
 		minSlots = 0,
 		yTicks,
 		formatSize = (n: number) => String(n),
-		cellSize = 28,
+		cellSize: cellSizeProp = 28,
+		maxWidth,
+		fit = false,
+		minCellSize = 12,
 		barHeight = 200,
 		setBarWidth = 150,
 		labelWidth = 120,
@@ -185,6 +194,17 @@
 	const ids = $derived([...result.intersections.map((i) => i.id), ...placeholders]);
 	const maxSetSize = $derived(Math.max(1, ...result.sets.map((s) => s.size)));
 	const topSize = $derived(Math.max(1, ...result.intersections.map((i) => i.size)));
+
+	let containerWidth = $state(0);
+	const cellSize = $derived(
+		fit && containerWidth > 0
+			? Math.min(
+					cellSizeProp,
+					Math.max(minCellSize, (containerWidth - setPanelWidth - labelWidth) / Math.max(1, ids.length))
+				)
+			: cellSizeProp
+	);
+	const scrolls = $derived(maxWidth != null || fit);
 
 	const matrixWidth = $derived(Math.max(1, ids.length) * cellSize);
 	const matrixHeight = $derived(Math.max(1, setNames.length) * cellSize);
@@ -285,6 +305,7 @@
 	function barFocus(i: Intersection<T>, e: FocusEvent) {
 		focused = i.id;
 		onhover?.(i);
+		(e.currentTarget as Element).scrollIntoView({ inline: 'nearest', block: 'nearest' });
 		tipAtElement(intersectionCtx(i), e.currentTarget as Element);
 	}
 	function barBlur() {
@@ -294,6 +315,13 @@
 	}
 </script>
 
+<div
+	class="upset-scroll"
+	class:scrolls
+	style:max-width={typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth}
+	style:width={maxWidth != null && !fit ? 'max-content' : undefined}
+	bind:clientWidth={containerWidth}
+>
 <div
 	{...rest}
 	bind:this={root}
@@ -531,8 +559,15 @@
 		</div>
 	{/if}
 </div>
+</div>
 
 <style>
+	.upset-scroll.scrolls {
+		overflow-x: auto;
+		/* room above the plot so the tooltip is not clipped by the scroll container */
+		padding-top: 32px;
+		margin-top: -32px;
+	}
 	.upset {
 		display: grid;
 		position: relative;
