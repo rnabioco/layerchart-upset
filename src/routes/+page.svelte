@@ -20,6 +20,7 @@
 
 <main>
 	<h1>UpSet with LayerChart</h1>
+	<p><a href="gallery">Gallery of optional settings →</a></p>
 	<div class="controls">
 		<label
 			>mode
