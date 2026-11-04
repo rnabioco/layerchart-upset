@@ -26,6 +26,8 @@
 	];
 	let pickedCounted = $state<string | null>('c');
 	let selected = $state<string | null>(null);
+	let controlledPick = $state<string | null>('c');
+	let controlledCalls = $state<(string | null)[]>([]);
 	let selectedDark = $state<string | null>('Drama&Comedy');
 
 	const examples = [
@@ -87,6 +89,11 @@
 		{
 			title: 'Axis titles',
 			props: `intersectionLabel="Intersection size" setLabel="Set size"`
+		},
+		{
+			title: 'Controlled selection',
+			desc: 'The owner holds the selection; clicks only notify through onselect.',
+			props: `controlled selected={pick} onselect={(i) => …}`
 		}
 	] as const;
 </script>
@@ -188,6 +195,17 @@
 							intersectionLabel="Intersection size"
 							setLabel="Set size"
 						/>
+					{:else if ex.title === 'Controlled selection'}
+						<UpSet
+							intersections={counted}
+							sets={contrasts}
+							labelWidth={140}
+							controlled
+							selected={controlledPick}
+							onselect={(i) => controlledCalls.push(i?.id ?? null)}
+						/>
+						<small data-calls>calls: {controlledCalls.map((c) => c ?? 'null').join(',')}</small>
+						<button type="button" data-set-pick onclick={() => (controlledPick = 'a')}>select a</button>
 					{/if}
 				</div>
 			</section>

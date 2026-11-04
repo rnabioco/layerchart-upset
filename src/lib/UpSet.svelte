@@ -92,6 +92,8 @@
 		onselect?: (selected: Intersection<T> | null) => void;
 		/** Bindable id of the selected intersection. */
 		selected?: string | null;
+		/** Controlled mode: selecting or pressing Escape only calls `onselect`; `selected` is never assigned internally. */
+		controlled?: boolean;
 	}
 
 	let {
@@ -133,6 +135,7 @@
 		stripes = true,
 		onselect,
 		selected = $bindable(null),
+		controlled = false,
 		mode,
 		sortIntersectionsBy,
 		sortIntersectionsOrder,
@@ -220,8 +223,9 @@
 	};
 
 	function select(i: Intersection<T>) {
-		selected = selected === i.id ? null : i.id;
-		onselect?.(selected ? i : null);
+		const next = selected === i.id ? null : i.id;
+		if (!controlled) selected = next;
+		onselect?.(next ? i : null);
 	}
 
 	// ---- tooltip -------------------------------------------------------------------------
@@ -264,7 +268,7 @@
 		}
 		if (e.key === 'Escape') {
 			if (selected != null) {
-				selected = null;
+				if (!controlled) selected = null;
 				onselect?.(null);
 			}
 			return;
