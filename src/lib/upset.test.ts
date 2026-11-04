@@ -55,3 +55,37 @@ describe('computeUpset', () => {
 		expect(degs).toEqual([...degs].sort((a, b) => b - a));
 	});
 });
+
+import { fromIntersections } from './upset.js';
+
+describe('fromIntersections', () => {
+	const sets = ['x', 'y', 'z'];
+	const input = [
+		{ id: 5, sets: ['x'], size: 3 },
+		{ id: 6, sets: ['z', 'x'], size: 10 },
+		{ sets: ['y'], size: 7 }
+	];
+
+	it('keeps the given order and the given ids', () => {
+		const r = fromIntersections(sets, input);
+		expect(r.intersections.map((i) => i.id)).toEqual(['5', '6', 'y']);
+		expect(r.sets.map((s) => s.name)).toEqual(sets);
+		expect(r.intersections[1].sets).toEqual(['x', 'z']); // normalised to set order
+		expect(r.intersections[1].degree).toBe(2);
+		expect((r.intersections[1].source as { id: number }).id).toBe(6);
+	});
+
+	it('sums set sizes from intersections unless provided', () => {
+		expect(fromIntersections(sets, input).sets.map((s) => s.size)).toEqual([13, 7, 10]);
+		expect(fromIntersections(sets, input, { setSizes: { x: 1, y: 2, z: 3 } }).sets.map((s) => s.size)).toEqual([1, 2, 3]);
+	});
+
+	it('sorts and filters on request', () => {
+		const r = fromIntersections(sets, input, { sortIntersectionsBy: 'cardinality', minSize: 5 });
+		expect(r.intersections.map((i) => i.size)).toEqual([10, 7]);
+	});
+
+	it('rejects unknown sets', () => {
+		expect(() => fromIntersections(sets, [{ sets: ['q'], size: 1 }])).toThrow(/unknown set/);
+	});
+});

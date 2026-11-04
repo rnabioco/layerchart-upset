@@ -28,12 +28,29 @@ export interface Intersection<T> {
 	degree: number;
 	size: number;
 	items: T[];
+	/** The record this intersection was built from (precomputed input only). */
+	source?: unknown;
+}
+
+/** One combination of sets with a known size, for input that was counted elsewhere. */
+export interface PrecomputedIntersection {
+	/** Stable identifier; defaults to the member set names joined with `&`. */
+	id?: string | number;
+	/** Names of the member sets (must appear in the `sets` list). */
+	sets: string[];
+	size: number;
+	[key: string]: unknown;
 }
 
 export interface SetInfo {
 	name: string;
 	size: number;
 }
+
+/** What a tooltip describes: one intersection column, or one set's size bar. */
+export type TooltipContext<T> =
+	| { kind: 'intersection'; intersection: Intersection<T>; text: string }
+	| { kind: 'set'; set: SetInfo; text: string };
 
 export interface UpSetResult<T> {
 	sets: SetInfo[];
@@ -118,25 +135,101 @@ export function computeUpset<T extends Record<string, unknown>>(
 		}
 	}
 
-	let intersections = [...groups.values()].filter(
-		(g) =>
-			g.size >= minSize && g.size <= maxSize && g.degree >= minDegree && g.degree <= maxDegree
-	);
+	const intersections = rankAndFilter([...groups.values()], {
+		sortIntersectionsBy,
+		sortIntersectionsOrder,
+		minSize,
+		maxSize,
+		minDegree,
+		maxDegree,
+		limit
+	});
 
+	return { sets, intersections, total: data.length };
+}
+
+type RankOptions = Pick<
+	UpSetOptions,
+	| 'sortIntersectionsBy'
+	| 'sortIntersectionsOrder'
+	| 'minSize'
+	| 'maxSize'
+	| 'minDegree'
+	| 'maxDegree'
+	| 'limit'
+>;
+
+function rankAndFilter<T>(all: Intersection<T>[], o: RankOptions): Intersection<T>[] {
+	const {
+		sortIntersectionsBy = 'cardinality',
+		sortIntersectionsOrder = 'descending',
+		minSize = 1,
+		maxSize = Infinity,
+		minDegree = 1,
+		maxDegree = Infinity,
+		limit
+	} = o;
+	let out = all.filter(
+		(g) => g.size >= minSize && g.size <= maxSize && g.degree >= minDegree && g.degree <= maxDegree
+	);
 	if (sortIntersectionsBy !== 'none') {
 		const dir = sortIntersectionsOrder === 'descending' ? -1 : 1;
-		intersections.sort((a, b) => {
+		out = [...out].sort((a, b) => {
 			const primary =
 				sortIntersectionsBy === 'cardinality' ? a.size - b.size : a.degree - b.degree;
 			if (primary !== 0) return dir * primary;
-			// stable, readable tie-break: secondary metric, then by set order
+			// stable, readable tie-break: secondary metric, then by id
 			const secondary =
 				sortIntersectionsBy === 'cardinality' ? a.degree - b.degree : b.size - a.size;
 			if (secondary !== 0) return secondary;
 			return a.id.localeCompare(b.id);
 		});
 	}
-	if (limit != null) intersections = intersections.slice(0, limit);
+	return limit != null ? out.slice(0, limit) : out;
+}
 
-	return { sets, intersections, total: data.length };
+export interface PrecomputedOptions extends UpSetOptions {
+	/** Known set sizes. When omitted they are summed from the intersections (exact for disjoint counts). */
+	setSizes?: Record<string, number>;
+	/** Total item count, used for percentages in tooltips. */
+	total?: number;
+}
+
+/**
+ * Build an {@link UpSetResult} from intersections that were counted elsewhere.
+ * Unlike {@link computeUpset}, the order you pass is kept unless you ask for sorting:
+ * `sets` stay in the given order and intersections are not re-sorted by default.
+ */
+export function fromIntersections(
+	setNames: string[],
+	input: PrecomputedIntersection[],
+	options: PrecomputedOptions = {}
+): UpSetResult<never> {
+	const { setSizes, total, sortSetsBy = 'none', sortSetsOrder = 'descending' } = options;
+	const known = new Set(setNames);
+	const all: Intersection<never>[] = input.map((raw) => {
+		for (const name of raw.sets) {
+			if (!known.has(name)) throw new Error(`Intersection references unknown set "${name}"`);
+		}
+		const members = setNames.filter((n) => raw.sets.includes(n));
+		return {
+			id: raw.id != null ? String(raw.id) : members.join('&'),
+			sets: members,
+			degree: members.length,
+			size: raw.size,
+			items: [],
+			source: raw
+		};
+	});
+
+	const sizes = new Map(setNames.map((n) => [n, setSizes?.[n] ?? 0]));
+	if (!setSizes) for (const g of all) for (const n of g.sets) sizes.set(n, sizes.get(n)! + g.size);
+	let sets: SetInfo[] = setNames.map((name) => ({ name, size: sizes.get(name)! }));
+	if (sortSetsBy === 'cardinality') {
+		const dir = sortSetsOrder === 'descending' ? -1 : 1;
+		sets = [...sets].sort((a, b) => dir * (a.size - b.size));
+	}
+
+	const intersections = rankAndFilter(all, { sortIntersectionsBy: 'none', ...options });
+	return { sets, intersections, total: total ?? NaN };
 }

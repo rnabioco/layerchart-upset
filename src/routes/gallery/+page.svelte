@@ -15,6 +15,16 @@
 	const degreeColor = (d: { degree: number }) =>
 		['#2b6cb0', '#dd6b20', '#c53030', '#6b46c1', '#2f855a', '#975a16'][d.degree - 1];
 
+	// Counts that were computed elsewhere (e.g. a manifest): no per-item rows needed.
+	const contrasts = ['treated vs control', 'KO vs WT', 'aged vs young'];
+	const counted = [
+		{ id: 'a', sets: ['treated vs control'], size: 42 },
+		{ id: 'b', sets: ['KO vs WT'], size: 17 },
+		{ id: 'c', sets: ['treated vs control', 'KO vs WT'], size: 9 },
+		{ id: 'd', sets: ['aged vs young'], size: 4 },
+		{ id: 'e', sets: ['KO vs WT', 'aged vs young', 'treated vs control'], size: 2 }
+	];
+	let pickedCounted = $state<string | null>('c');
 	let selected = $state<string | null>(null);
 	let selectedDark = $state<string | null>('Drama&Comedy');
 
@@ -63,6 +73,16 @@
 		{
 			title: 'Big dots and thick connectors',
 			props: `cellSize={34} dotRadius={0.38} connectorWidth={6} barPadding={0.15} barRadius={6}`
+		},
+		{
+			title: 'Precomputed intersections',
+			desc: 'Pass counts you already have instead of per-item rows. Order is kept as given; emphasise one row; reserve empty slots; no set-size panel.',
+			props: `intersections={counted} sets={contrasts} emphasizedSets={['KO vs WT']} minSlots={8} yTicks={[0, 20, 40]} bind:selected`
+		},
+		{
+			title: 'Custom tooltip',
+			desc: 'Hover or Tab to a bar. The tooltip is a snippet, and every bar is a button (Enter/Space select, arrows move, Esc clears).',
+			props: `{#snippet tooltip(t)} … {/snippet}  onhover={(i) => …}`
 		},
 		{
 			title: 'Axis titles',
@@ -139,6 +159,27 @@
 							barPadding={0.15}
 							barRadius={6}
 						/>
+					{:else if ex.title === 'Precomputed intersections'}
+						<UpSet
+							intersections={counted}
+							sets={contrasts}
+							emphasizedSets={['KO vs WT']}
+							minSlots={8}
+							yTicks={[0, 20, 40]}
+							labelWidth={140}
+							bind:selected={pickedCounted}
+						/>
+					{:else if ex.title === 'Custom tooltip'}
+						<UpSet {data} sets={genres} minSize={15}>
+							{#snippet tooltip(t)}
+								{#if t.kind === 'intersection'}
+									<strong>{t.intersection.sets.join(' + ')}</strong><br />
+									{t.intersection.size} films · degree {t.intersection.degree}
+								{:else}
+									<strong>{t.set.name}</strong>: {t.set.size} films
+								{/if}
+							{/snippet}
+						</UpSet>
 					{:else if ex.title === 'Axis titles'}
 						<UpSet
 							{data}

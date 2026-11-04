@@ -15,6 +15,31 @@ with an API modelled on R's [ComplexUpset](https://krassowski.github.io/complex-
 <UpSet {data} sets={['A', 'B', 'C']} minSize={2} bind:selected />
 ```
 
+## Precomputed counts
+
+Already have the counts? Skip the per-item rows:
+
+```svelte
+<UpSet
+  sets={['treated vs control', 'KO vs WT']}
+  intersections={[
+    { id: 'a', sets: ['treated vs control'], size: 42 },
+    { id: 'c', sets: ['treated vs control', 'KO vs WT'], size: 9 }
+  ]}
+  emphasizedSets={['KO vs WT']}
+  minSlots={8}
+  bind:selected
+/>
+```
+
+Order is kept as given (sort with `sortIntersectionsBy`). Add `setSizes` to show the set-size panel.
+
+## Accessibility and test hooks
+
+Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab stop. Enter/Space select,
+←/→/Home/End move focus, Esc clears. Hooks: `data-upset-bar` (+ `data-id`, `data-n`, `data-tip`),
+`data-upset-count`, `data-upset-row`, `data-upset-set-bar`. Extra attributes on `<UpSet>` go to the root.
+
 ## Props
 
 | prop | default | |
@@ -31,7 +56,11 @@ with an API modelled on R's [ComplexUpset](https://krassowski.github.io/complex-
 | `dotRadius` `connectorWidth` `barPadding` `barRadius` `fontSize` | .3 3 .3 2 12 | geometry / typography |
 | `intersectionLabel` `setLabel` | – | axis titles |
 | `showLabels` `stripes` `tooltips` | true | toggles |
-| `selected` (bindable), `onselect` | | click a column to select it |
+| `selected` (bindable), `onselect` | | click / Enter / Space selects an intersection |
+| `intersections` `setSizes` `total` | – | precomputed input (see above) |
+| `tooltip` (snippet), `describe`, `tooltips`, `onhover` | | tooltip content / events |
+| `setLabels` `emphasizedSets` `emphasisMarker` `maxLabelLength` | | row labels |
+| `showSetSizes` `minSlots` `yTicks` `formatSize` | | layout / axis |
 
 `computeUpset(data, sets, options)` is exported for use without the component.
 
