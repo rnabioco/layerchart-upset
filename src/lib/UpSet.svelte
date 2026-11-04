@@ -6,11 +6,13 @@
 	import {
 		computeUpset,
 		fromIntersections,
+		reportOf,
 		type Intersection,
 		type PrecomputedIntersection,
 		type SetInfo,
 		type TooltipContext,
 		type UpSetOptions,
+		type UpSetReport,
 		type UpSetResult
 	} from './upset.js';
 
@@ -97,6 +99,12 @@
 		selected?: string | null;
 		/** Controlled mode: selecting or pressing Escape only calls `onselect`; `selected` is never assigned internally. */
 		controlled?: boolean;
+		/** Total intersections before truncation, when a precomputed list was cut elsewhere. */
+		intersectionsTotal?: number;
+		/** Called when the number of shown/hidden intersections changes. */
+		onresult?: (r: UpSetReport) => void;
+		/** Rendered below the plot, e.g. "the largest N of M combinations are drawn". */
+		footer?: Snippet<[UpSetReport]>;
 	}
 
 	let {
@@ -139,6 +147,9 @@
 		onselect,
 		selected = $bindable(null),
 		controlled = false,
+		intersectionsTotal,
+		onresult,
+		footer,
 		mode,
 		sortIntersectionsBy,
 		sortIntersectionsOrder,
@@ -157,6 +168,7 @@
 			? (fromIntersections(sets, intersections, {
 					setSizes,
 					total,
+					intersectionsTotal,
 					sortIntersectionsBy,
 					sortIntersectionsOrder,
 					sortSetsBy,
@@ -180,6 +192,15 @@
 					limit
 				})
 	);
+
+	const report = $derived(reportOf(result));
+	let lastReport = '';
+	$effect(() => {
+		const key = `${report.shown}/${report.total}`;
+		if (key === lastReport) return;
+		lastReport = key;
+		onresult?.(report);
+	});
 
 	const setPanel = $derived(showSetSizes ?? (intersections ? setSizes != null : true));
 	const setPanelWidth = $derived(setPanel ? setBarWidth : 0);
@@ -530,6 +551,10 @@
 		</Chart>
 	</div>
 
+	{#if footer}
+		<div class="upset-footer">{@render footer(report)}</div>
+	{/if}
+
 	{#if tooltips && tip}
 		<div class="upset-tooltip" role="tooltip" style:left="{tip.x}px" style:top="{tip.y}px">
 			{#if tooltip}
@@ -551,6 +576,9 @@
 		align-self: end;
 		padding-left: 4px;
 		opacity: 0.7;
+	}
+	.upset-footer {
+		grid-column: 1 / -1;
 	}
 	.panel {
 		position: relative;

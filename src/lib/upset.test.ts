@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeUpset } from './upset.js';
+import { computeUpset, reportOf } from './upset.js';
 
 const data = [
 	{ A: true, B: false, C: false },
@@ -87,5 +87,43 @@ describe('fromIntersections', () => {
 
 	it('rejects unknown sets', () => {
 		expect(() => fromIntersections(sets, [{ sets: ['q'], size: 1 }])).toThrow(/unknown set/);
+	});
+});
+
+describe('hidden intersection count', () => {
+	const names = ['A', 'B', 'C', 'D', 'E', 'F'];
+	// 50 distinct combinations, sizes 1..50
+	const fifty = Array.from({ length: 63 }, (_, k) => k + 1)
+		.slice(0, 50)
+		.map((mask, k) => ({
+			sets: names.filter((_, i) => mask & (1 << i)),
+			size: k + 1
+		}));
+
+	it('limit_reports_hidden_count', () => {
+		const r = fromIntersections(names, fifty, { limit: 30 });
+		expect(reportOf(r)).toEqual({ shown: 30, total: 50, hidden: 20 });
+		const rows = Array.from({ length: 5 }, (_, i) => ({ A: i < 3, B: i % 2 === 0, C: i === 4 }));
+		const c = computeUpset(rows, ['A', 'B', 'C'], { limit: 1 });
+		expect(c.totalIntersections).toBeGreaterThan(1);
+		expect(reportOf(c).hidden).toBe(c.totalIntersections - 1);
+	});
+
+	it('filters_count_toward_hidden', () => {
+		const r = fromIntersections(names, fifty, { minSize: 41 });
+		expect(reportOf(r)).toEqual({ shown: 10, total: 50, hidden: 40 });
+		const d = fromIntersections(names, fifty, { minSize: 41, limit: 4 });
+		expect(reportOf(d)).toEqual({ shown: 4, total: 50, hidden: 46 });
+	});
+
+	it('no_limit_hides_nothing', () => {
+		expect(reportOf(fromIntersections(names, fifty))).toEqual({ shown: 50, total: 50, hidden: 0 });
+		const c = computeUpset([{ A: true }, { A: false, B: true }], ['A', 'B']);
+		expect(reportOf(c).hidden).toBe(0);
+	});
+
+	it('intersectionsTotal overrides the given list length', () => {
+		const r = fromIntersections(names, fifty, { intersectionsTotal: 212, limit: 30 });
+		expect(reportOf(r)).toEqual({ shown: 30, total: 212, hidden: 182 });
 	});
 });
