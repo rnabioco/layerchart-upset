@@ -1,3 +1,5 @@
+import { scaleLinear, scaleLog, scaleSymlog, type ScaleContinuousNumeric } from 'd3-scale';
+
 export type UpSetMode = 'distinct' | 'intersect' | 'union';
 
 export interface UpSetOptions {
@@ -264,4 +266,48 @@ export function fromIntersections(
 		total: total ?? NaN,
 		totalIntersections: intersectionsTotal ?? ranked.totalIntersections
 	};
+}
+
+
+// ---- size scales ----------------------------------------------------------------------------
+
+/** How bar lengths map to sizes. `symlog` shows 0 natively; `log` clamps sizes below `LOG_FLOOR`. */
+export type UpSetScale = 'linear' | 'log' | 'symlog';
+
+/** Lower bound of a log domain: below 1 so that a size of 1 still has a visible bar. */
+export const LOG_FLOOR = 0.5;
+
+/** A fresh d3 scale of the given kind (domain and range are set by the caller). */
+export function sizeScale(kind: UpSetScale): ScaleContinuousNumeric<number, number> {
+	return kind === 'log' ? scaleLog() : kind === 'symlog' ? scaleSymlog().constant(1) : scaleLinear();
+}
+
+/** Round `max` up to the next power of ten (at least 10), the top of a non-linear domain. */
+export function sizeTop(max: number): number {
+	return Math.max(10, 10 ** Math.ceil(Math.log10(Math.max(1, max))));
+}
+
+/** Domain for a non-linear scale: `[LOG_FLOOR, top]` for log, `[0, top]` for symlog. */
+export function sizeDomain(kind: 'log' | 'symlog', max: number): [number, number] {
+	return [kind === 'log' ? LOG_FLOOR : 0, sizeTop(max)];
+}
+
+/** Size to feed the scale: log cannot draw 0 (or less), so those sit at the floor and get no bar. */
+export function clampSize(kind: UpSetScale, n: number): number {
+	return kind === 'log' ? Math.max(n, LOG_FLOOR) : n;
+}
+
+/**
+ * Ticks for a non-linear scale with the given top: powers of ten, plus 2 and 5 of each when the
+ * domain spans two decades or fewer; symlog also has 0. Linear returns undefined (the axis picks).
+ */
+export function sizeTicks(kind: UpSetScale, top: number): number[] | undefined {
+	if (kind === 'linear') return undefined;
+	const decades = Math.round(Math.log10(top));
+	const out: number[] = kind === 'symlog' ? [0] : [];
+	for (let d = 0; d <= decades; d++) {
+		const p = 10 ** d;
+		for (const m of decades <= 2 ? [1, 2, 5] : [1]) if (m * p <= top) out.push(m * p);
+	}
+	return out;
 }

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { computeUpset, reportOf } from './upset.js';
+import {
+	LOG_FLOOR,
+	clampSize,
+	computeUpset,
+	reportOf,
+	sizeDomain,
+	sizeScale,
+	sizeTicks,
+	sizeTop
+} from './upset.js';
 
 const data = [
 	{ A: true, B: false, C: false },
@@ -125,5 +134,38 @@ describe('hidden intersection count', () => {
 	it('intersectionsTotal overrides the given list length', () => {
 		const r = fromIntersections(names, fifty, { intersectionsTotal: 212, limit: 30 });
 		expect(reportOf(r)).toEqual({ shown: 30, total: 212, hidden: 182 });
+	});
+});
+
+describe('size scales', () => {
+	it('scale_log_floor_and_top', () => {
+		expect(sizeTop(300)).toBe(1000);
+		expect(sizeTop(1000)).toBe(1000);
+		expect(sizeTop(1)).toBe(10);
+		expect(sizeDomain('log', 300)).toEqual([LOG_FLOOR, 1000]);
+		expect(sizeDomain('symlog', 300)).toEqual([0, 1000]);
+		// a size of 1 must have a visible bar: it sits above the floor
+		const y = sizeScale('log').domain(sizeDomain('log', 300)).range([200, 0]);
+		expect(y(1)).toBeLessThan(y(LOG_FLOOR));
+	});
+
+	it('scale_log_ticks', () => {
+		expect(sizeTicks('log', 100)).toEqual([1, 2, 5, 10, 20, 50, 100]);
+		expect(sizeTicks('log', 10000)).toEqual([1, 10, 100, 1000, 10000]);
+	});
+
+	it('scale_symlog_ticks', () => {
+		expect(sizeTicks('symlog', 100)).toEqual([0, 1, 2, 5, 10, 20, 50, 100]);
+		expect(sizeTicks('symlog', 10000)?.[0]).toBe(0);
+		expect(sizeTicks('linear', 100)).toBeUndefined();
+	});
+
+	it('scale_zero_clamped', () => {
+		expect(clampSize('log', 0)).toBe(LOG_FLOOR);
+		expect(clampSize('log', 7)).toBe(7);
+		expect(clampSize('symlog', 0)).toBe(0);
+		expect(clampSize('linear', 0)).toBe(0);
+		const y = sizeScale('symlog').domain(sizeDomain('symlog', 50)).range([200, 0]);
+		expect(y(0)).toBe(200);
 	});
 });
