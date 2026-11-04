@@ -38,6 +38,9 @@
 	let boundScale = $state<'linear' | 'log' | 'symlog'>('linear');
 	let controlledScale = $state<'linear' | 'log' | 'symlog'>('linear');
 	let scaleCalls = $state<string[]>([]);
+	let pickedSet = $state<string | null>(null);
+	let controlledSet = $state<string | null>('Drama');
+	let setCalls = $state<string[]>([]);
 	let hiddenLimit = $state(8);
 	let lastReport = $state('');
 	let selected = $state<string | null>(null);
@@ -357,6 +360,35 @@
 					setScale="linear"
 				/>
 			</div>
+		</section>
+
+		<section>
+			<h2>Set selection (bound)</h2>
+			<p class="desc">
+				Click a set bar or row label to keep only the columns that contain it; Esc or a second click clears.
+			</p>
+			<code>bind:selectedSet onsetselect=(set, previous)</code>
+			<div class="chart">
+				<UpSet {data} sets={genres} minSize={10} bind:selectedSet={pickedSet} />
+			</div>
+			<p class="desc" data-testid="set-bound">{pickedSet ?? 'none'}</p>
+		</section>
+
+		<section>
+			<h2>Set selection (controlled)</h2>
+			<p class="desc">With <code>controlled</code> the owner decides; <code>onsetselect</code> only reports.</p>
+			<code>selectedSet={'{controlledSet}'} controlled onsetselect</code>
+			<div class="chart">
+				<UpSet
+					{data}
+					sets={genres}
+					minSize={10}
+					selectedSet={controlledSet}
+					controlled
+					onsetselect={(s, p) => (setCalls = [...setCalls, `${p?.name ?? 'none'}->${s?.name ?? 'none'}`])}
+				/>
+			</div>
+			<p class="desc" data-testid="set-ctrl-calls">{setCalls.join(',')}</p>
 		</section>
 
 		<section class="themed">

@@ -21,6 +21,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 - `toCSV(result, { items })` and `membersOf(result, id)` helpers for getting the data behind the bars; they return
   values and never write files.
 
+- Set selection: clicking a set bar or row label (or Enter/Space on a set bar; Esc clears; Up/Down move) selects it.
+  `selectedSet` is bindable, `onsetselect(set, previous)` reports, and columns without the set are dimmed.
+  `controlled` applies. Set bars are now focusable buttons.
+- README and docs table list the scale, set-selection and `keepItems` props.
+
 ### Changed
 
 - `mode="intersect"` and `"union"` now enumerate combinations once per distinct membership instead of testing every

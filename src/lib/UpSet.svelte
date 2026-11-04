@@ -119,7 +119,11 @@
 		scaleToggle?: boolean;
 		/** Called when the toggle is pressed; with `controlled` it is the only effect. */
 		onscalechange?: (next: UpSetScale, previous: UpSetScale) => void;
-		/** Controlled mode: selecting, pressing Escape or the scale toggle only calls the callback; `selected` and `scale` are never assigned internally. */
+		/** Bindable name of the selected set (a set bar or row label was clicked); columns without it are dimmed. */
+		selectedSet?: string | null;
+		/** Called when a set is selected or cleared (null). `previous` is the set selected before, if any. */
+		onsetselect?: (set: SetInfo | null, previous: SetInfo | null) => void;
+		/** Controlled mode: selecting, pressing Escape, the scale toggle or choosing a set only calls the callback; `selected`, `selectedSet` and `scale` are never assigned internally. */
 		controlled?: boolean;
 		/** Total intersections before truncation, when a precomputed list was cut elsewhere. */
 		intersectionsTotal?: number;
@@ -172,6 +176,8 @@
 		onselect,
 		selected = $bindable(null),
 		controlled = false,
+		selectedSet = $bindable(null),
+		onsetselect,
 		scale = $bindable('linear'),
 		setScale,
 		scaleToggle = false,
@@ -296,7 +302,14 @@
 	let hovered = $state<string | null>(null);
 	let focused = $state<string | null>(null);
 	const focus = $derived(hovered ?? focused ?? selected);
-	const opacity = (id: string) => (focus && focus !== id ? dimOpacity : 1);
+	/** Ids of the columns containing the selected set; null when no set is selected. */
+	const inSelectedSet = $derived(
+		selectedSet == null
+			? null
+			: new Set(result.intersections.filter((i) => i.sets.includes(selectedSet!)).map((i) => i.id))
+	);
+	const opacity = (id: string) =>
+		(focus && focus !== id) || (inSelectedSet && !inSelectedSet.has(id)) ? dimOpacity : 1;
 
 	/** Color a prop dictates for this intersection; undefined leaves it to CSS (custom properties). */
 	function colorOf(i: Intersection<T>): string | undefined {
@@ -328,6 +341,42 @@
 		const next = selected === i.id ? null : i.id;
 		if (!controlled) selected = next;
 		onselect?.(next ? i : null, previous);
+	}
+
+	function selectSet(name: string) {
+		const info = result.sets.find((s) => s.name === name);
+		if (!info) return;
+		const previous = result.sets.find((s) => s.name === selectedSet) ?? null;
+		const next = selectedSet === name ? null : name;
+		if (!controlled) selectedSet = next;
+		onsetselect?.(next ? info : null, previous);
+	}
+	function setKeydown(e: KeyboardEvent, name: string) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			selectSet(name);
+			return;
+		}
+		if (e.key === 'Escape') {
+			if (selectedSet != null) {
+				const previous = result.sets.find((s) => s.name === selectedSet) ?? null;
+				if (!controlled) selectedSet = null;
+				onsetselect?.(null, previous);
+			}
+			return;
+		}
+		const bars = Array.from(root?.querySelectorAll<SVGElement>('[data-upset-set-bar]') ?? []);
+		const at = bars.indexOf(e.currentTarget as SVGElement);
+		const next =
+			e.key === 'ArrowDown' ? at + 1
+			: e.key === 'ArrowUp' ? at - 1
+			: e.key === 'Home' ? 0
+			: e.key === 'End' ? bars.length - 1
+			: null;
+		if (next != null && bars[next]) {
+			e.preventDefault();
+			bars[next].focus();
+		}
 	}
 
 	// ---- tooltip -------------------------------------------------------------------------
@@ -552,10 +601,19 @@
 								width={Math.max(0, context.width - x)}
 								height={ys.bandwidth()}
 								fill={setColors?.[s.name] ?? (typeof color === 'string' ? color : undefined)}
-								class={themed(setColors?.[s.name] ?? (typeof color === 'string' ? color : undefined), 'upset-bar-fill')}
+								class="clickable upset-set-bar {themed(setColors?.[s.name] ?? (typeof color === 'string' ? color : undefined), 'upset-bar-fill')}"
 								corners={[barRadius, 0, 0, barRadius]}
+								fillOpacity={selectedSet != null && selectedSet !== s.name ? dimOpacity : 1}
+								stroke={selectedSet === s.name ? 'currentColor' : 'none'}
+								strokeWidth={selectedSet === s.name ? 2 : 0}
+								role="button"
+								tabindex={0}
+								aria-label={`${labelOf(s.name)}: ${formatSize(s.size)}`}
+								aria-pressed={selectedSet === s.name}
 								data-upset-set-bar={s.name}
 								data-n={s.size}
+								onclick={() => selectSet(s.name)}
+								onkeydown={(e: KeyboardEvent) => setKeydown(e, s.name)}
 								onpointerenter={(e: PointerEvent) =>
 									tipAtPointer({ kind: 'set', set: s, text: `${labelOf(s.name)}: ${formatSize(s.size)}` }, e)}
 								onpointermove={(e: PointerEvent) =>
@@ -612,9 +670,10 @@
 							y={y + h / 2}
 							textAnchor="end"
 							verticalAnchor="middle"
-							class="upset-set-name"
-							style={emphasizedSets.includes(name) ? 'font-weight: 700' : undefined}
+							class="clickable upset-set-name"
+							style={emphasizedSets.includes(name) || selectedSet === name ? 'font-weight: 700' : undefined}
 							data-upset-row={name}
+							onclick={() => selectSet(name)}
 						/>
 					{/each}
 
@@ -733,7 +792,8 @@
 	.upset :global(.clickable) {
 		cursor: pointer;
 	}
-	.upset :global(.upset-bar:focus-visible) {
+	.upset :global(.upset-bar:focus-visible),
+	.upset :global(.upset-set-bar:focus-visible) {
 		outline: 2px solid currentColor;
 		outline-offset: 1px;
 	}

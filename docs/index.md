@@ -57,7 +57,12 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `intersectionLabel` `setLabel` | – | axis titles |
 | `showLabels` `stripes` `tooltips` | true | toggles |
 | `selected` (bindable) | | id of the selected intersection (click / Enter / Space) |
-| `controlled` | `false` | owner holds the selection: clicks, Enter/Space and Esc only call `onselect`, `selected` is never assigned internally |
+| `selectedSet` (bindable) | | name of the selected set (click a set bar or row label, Enter/Space, Esc clears); columns without it are dimmed |
+| `onsetselect(set, previous)` | | called when a set is selected or cleared (`null`) |
+| `scale` (bindable) `setScale` | `linear` | size scale of the bars: `linear`, `log` or `symlog` (shows 0); `setScale` overrides the set-size panel |
+| `scaleToggle` `onscalechange(next, previous)` | `false` | a button that switches linear ↔ log (symlog when a size is 0) |
+| `keepItems` | `true` | `false` leaves each intersection's `items` empty, for large inputs where only counts matter |
+| `controlled` | `false` | owner holds the interactive state: clicks, Enter/Space, Esc, set selection and the scale toggle only call their callbacks; `selected`, `selectedSet` and `scale` are never assigned internally |
 | `onselect(selected, previous)` | | called on every selection change; `previous` is the intersection that was selected before (or cleared), `null` if none |
 | `onresult({ shown, total, hidden })` | | called when the result changes; `total` counts intersections before `limit` and the size/degree filters |
 | `footer` (snippet) | | rendered below the plot with `{ shown, total, hidden }`, e.g. "the largest N of M combinations are drawn" |
