@@ -26,6 +26,7 @@
 	];
 	let pickedCounted = $state<string | null>('c');
 	let selected = $state<string | null>(null);
+	let selectCalls = $state<string[]>([]);
 	let selectedDark = $state<string | null>('Drama&Comedy');
 
 	const examples = [
@@ -207,6 +208,20 @@
 					bind:selected={selectedDark}
 				/>
 			</div>
+		</section>
+
+		<section>
+			<h2>onselect previous argument</h2>
+			<code>onselect=(selected, previous) => log</code>
+			<div class="chart">
+				<UpSet
+					{data}
+					sets={genres}
+					minSize={40}
+					onselect={(s, p) => selectCalls.push(`${s?.id ?? 'null'},${p?.id ?? 'null'}`)}
+				/>
+			</div>
+			<pre data-calls>{selectCalls.join('\n')}</pre>
 		</section>
 	</div>
 </main>
