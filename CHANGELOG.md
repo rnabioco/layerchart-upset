@@ -14,6 +14,14 @@ adheres to [Semantic Versioning](https://semver.org/).
   with `--upset-control-fg`, `--upset-control-border`, `--upset-control-on`. Default output is unchanged.
 - Browser tests accept `CHROME_PATH` to run against a local Chrome.
 - Draft specs for follow-up work in `specs/`.
+- `keepItems` option (default `true`): `false` leaves each intersection's `items` empty, for large inputs where only
+  counts matter.
+
+### Changed
+
+- `mode="intersect"` and `"union"` now enumerate combinations once per distinct membership instead of testing every
+  row against all 2^n combinations; results and ordering are identical. Each bar's description is computed once per
+  render.
 
 ## [0.3.0] - 2026-11-03
 

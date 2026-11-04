@@ -189,6 +189,7 @@
 		minDegree,
 		maxDegree,
 		limit,
+		keepItems,
 		...rest
 	}: Props = $props();
 
@@ -218,7 +219,8 @@
 					maxSize,
 					minDegree,
 					maxDegree,
-					limit
+					limit,
+					keepItems
 				})
 	);
 
@@ -467,6 +469,7 @@
 						{@const y = ys(clampSize(scale, d.size))}
 						{@const isSel = selected === d.id}
 						{@const fill = colorOf(d)}
+						{@const label = describe(d)}
 						<Rect
 							{x}
 							{y}
@@ -480,13 +483,13 @@
 							class="clickable upset-bar {themed(fill, isSel ? 'upset-bar-selected' : 'upset-bar-fill')}"
 							role="button"
 							tabindex={0}
-							aria-label={describe(d)}
+							aria-label={label}
 							aria-pressed={isSel}
 							data-upset-bar=""
 							data-id={d.id}
 							data-set={d.id}
 							data-n={d.size}
-							data-tip={describe(d)}
+							data-tip={label}
 							onclick={() => select(d)}
 							onkeydown={(e: KeyboardEvent) => barKeydown(e, d)}
 							onfocus={(e: FocusEvent) => barFocus(d, e)}
