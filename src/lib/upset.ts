@@ -20,6 +20,11 @@ export interface UpSetOptions {
 	maxDegree?: number;
 	/** Keep only the first N intersections after sorting. */
 	limit?: number;
+	/**
+	 * Keep each intersection's rows in `items` (default true). Set false for large inputs when only the
+	 * counts matter: `items` is then empty, so `onselect` and tooltips see no rows.
+	 */
+	keepItems?: boolean;
 }
 
 export interface Intersection<T> {
@@ -82,14 +87,6 @@ function membership<T extends Record<string, unknown>>(row: T, sets: string[]): 
 	return sets.filter((s) => Boolean(row[s]));
 }
 
-function combos(names: string[]): string[][] {
-	const out: string[][] = [];
-	const n = names.length;
-	for (let mask = 1; mask < 1 << n; mask++) {
-		out.push(names.filter((_, i) => mask & (1 << i)));
-	}
-	return out;
-}
 
 /**
  * Compute set sizes and intersections from rows with one boolean column per set —
@@ -110,7 +107,8 @@ export function computeUpset<T extends Record<string, unknown>>(
 		maxSize = Infinity,
 		minDegree = 1,
 		maxDegree = Infinity,
-		limit
+		limit,
+		keepItems = true
 	} = options;
 
 	const sizes = new Map<string, number>(setNames.map((s) => [s, 0]));
@@ -122,34 +120,47 @@ export function computeUpset<T extends Record<string, unknown>>(
 		sets = sets.sort((a, b) => dir * (a.size - b.size));
 	}
 	const order = sets.map((s) => s.name);
-	const rank = new Map(order.map((s, i) => [s, i]));
-	const byRank = (xs: string[]) => [...xs].sort((a, b) => rank.get(a)! - rank.get(b)!);
 
 	const groups = new Map<string, Intersection<T>>();
-	const add = (members: string[], row: T) => {
+	const groupOf = (members: string[]) => {
 		const id = members.join('&');
 		let g = groups.get(id);
 		if (!g) {
 			g = { id, sets: members, degree: members.length, size: 0, items: [] };
 			groups.set(id, g);
 		}
-		g.items.push(row);
-		g.size++;
+		return g;
+	};
+
+	// Rows with the same memberships hit the same groups, so work them out once per membership mask.
+	// Within a mask, groups come in ascending combination-mask order (the order they were created in
+	// before), which matters for `sortIntersectionsBy: 'none'`.
+	const bit = new Map(order.map((s, i) => [s, 1 << i]));
+	const comboOf = (mask: number) => order.filter((_, i) => mask & (1 << i));
+	const hitCache = new Map<number, Intersection<T>[]>();
+	const hitsFor = (M: number): Intersection<T>[] => {
+		let hits = hitCache.get(M);
+		if (hits) return hits;
+		hits = [];
+		if (mode === 'distinct') {
+			hits.push(groupOf(comboOf(M)));
+		} else if (mode === 'intersect') {
+			// every non-empty subset of the row's own memberships, ascending
+			for (let s = (0 - M) & M; s !== 0; s = (s - M) & M) hits.push(groupOf(comboOf(s)));
+		} else {
+			for (let s = 1; s < 1 << order.length; s++) if (s & M) hits.push(groupOf(comboOf(s)));
+		}
+		hitCache.set(M, hits);
+		return hits;
 	};
 
 	for (const row of data) {
-		const members = byRank(membership(row, setNames));
-		if (members.length === 0) continue;
-		if (mode === 'distinct') {
-			add(members, row);
-		} else {
-			for (const combo of combos(order)) {
-				const hit =
-					mode === 'intersect'
-						? combo.every((s) => members.includes(s))
-						: combo.some((s) => members.includes(s));
-				if (hit) add(combo, row);
-			}
+		let M = 0;
+		for (const s of membership(row, setNames)) M |= bit.get(s) ?? 0;
+		if (M === 0) continue;
+		for (const g of hitsFor(M)) {
+			if (keepItems) g.items.push(row);
+			g.size++;
 		}
 	}
 

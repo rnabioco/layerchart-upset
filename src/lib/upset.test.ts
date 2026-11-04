@@ -169,3 +169,61 @@ describe('size scales', () => {
 		expect(y(0)).toBe(200);
 	});
 });
+
+describe('computeUpset modes against a brute-force reference', () => {
+	// The original algorithm: every row against every non-empty combination of sets.
+	function reference(rows: Record<string, boolean>[], names: string[], mode: 'distinct' | 'intersect' | 'union') {
+		const { sets: ranked } = computeUpset(rows, names, { minSize: 0 });
+		const order = ranked.map((s) => s.name);
+		const out = new Map<string, number[]>();
+		rows.forEach((row, r) => {
+			const members = order.filter((s) => row[s]);
+			if (!members.length) return;
+			for (let m = 1; m < 1 << order.length; m++) {
+				const combo = order.filter((_, i) => m & (1 << i));
+				const hit =
+					mode === 'distinct'
+						? combo.length === members.length && combo.every((s) => members.includes(s))
+						: mode === 'intersect'
+							? combo.every((s) => members.includes(s))
+							: combo.some((s) => members.includes(s));
+				if (hit) out.set(combo.join('&'), [...(out.get(combo.join('&')) ?? []), r]);
+			}
+		});
+		return out;
+	}
+
+	const names = ['A', 'B', 'C', 'D', 'E'];
+	let seed = 7;
+	const rnd = () => ((seed = (seed * 1664525 + 1013904223) % 2 ** 32) / 2 ** 32);
+	const rows = Array.from({ length: 400 }, () => Object.fromEntries(names.map((n) => [n, rnd() < 0.4])));
+
+	for (const mode of ['distinct', 'intersect', 'union'] as const) {
+		it(`${mode}_matches_bruteforce`, () => {
+			const got = computeUpset(rows, names, { mode, minSize: 0, sortIntersectionsBy: 'none' });
+			const want = reference(rows, names, mode);
+			expect(got.intersections.length).toBe(want.size);
+			for (const g of got.intersections) {
+				const idx = want.get(g.id);
+				expect(idx, g.id).toBeDefined();
+				expect(g.size).toBe(idx!.length);
+				expect(g.items).toEqual(idx!.map((r) => rows[r]));
+			}
+		});
+	}
+
+	it('keep_items_false_empties_items', () => {
+		const r = computeUpset(rows, names, { mode: 'intersect', keepItems: false });
+		const k = computeUpset(rows, names, { mode: 'intersect' });
+		expect(r.intersections.every((g) => g.items.length === 0)).toBe(true);
+		expect(r.intersections.map((g) => [g.id, g.size])).toEqual(k.intersections.map((g) => [g.id, g.size]));
+	});
+
+	it('intersect_scales_to_many_sets', () => {
+		const many = Array.from({ length: 15 }, (_, i) => `S${i}`);
+		const big = Array.from({ length: 20000 }, () => Object.fromEntries(many.map((n) => [n, rnd() < 0.15])));
+		const t = performance.now();
+		computeUpset(big, many, { mode: 'intersect', keepItems: false });
+		expect(performance.now() - t).toBeLessThan(5000);
+	});
+});
