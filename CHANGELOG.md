@@ -4,7 +4,7 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] - 2026-11-03
 
 ### Added
 
@@ -83,6 +83,7 @@ Initial release.
   GitHub Pages.
 - CI (type check, unit tests, build + publint) and Dependabot for npm and GitHub Actions.
 
+[0.3.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/rnabioco/layerchart-upset/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rnabioco/layerchart-upset/releases/tag/v0.1.0
