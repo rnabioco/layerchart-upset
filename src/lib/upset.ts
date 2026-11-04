@@ -10,7 +10,12 @@ export interface UpSetOptions {
 	 * - `union`: an item counts in every combination it overlaps with at least one set
 	 */
 	mode?: UpSetMode;
-	sortIntersectionsBy?: 'cardinality' | 'degree' | 'none';
+	/**
+	 * `sets` orders by set rank (the row order of the matrix): intersections containing the earliest sets
+	 * come first, a prefix before its extensions (A, A&B, A&C, B, B&C). `descending` (default) is that order;
+	 * `ascending` reverses it.
+	 */
+	sortIntersectionsBy?: 'cardinality' | 'degree' | 'sets' | 'none';
 	sortIntersectionsOrder?: 'descending' | 'ascending';
 	sortSetsBy?: 'cardinality' | 'none';
 	sortSetsOrder?: 'descending' | 'ascending';
@@ -164,15 +169,19 @@ export function computeUpset<T extends Record<string, unknown>>(
 		}
 	}
 
-	const { intersections, totalIntersections } = rankAndFilter([...groups.values()], {
-		sortIntersectionsBy,
-		sortIntersectionsOrder,
-		minSize,
-		maxSize,
-		minDegree,
-		maxDegree,
-		limit
-	});
+	const { intersections, totalIntersections } = rankAndFilter(
+		[...groups.values()],
+		{
+			sortIntersectionsBy,
+			sortIntersectionsOrder,
+			minSize,
+			maxSize,
+			minDegree,
+			maxDegree,
+			limit
+		},
+		order
+	);
 
 	return { sets, intersections, total: data.length, totalIntersections };
 }
@@ -190,7 +199,9 @@ type RankOptions = Pick<
 
 function rankAndFilter<T>(
 	all: Intersection<T>[],
-	o: RankOptions
+	o: RankOptions,
+	/** Display order of the sets, for `sortIntersectionsBy: 'sets'`. */
+	order: string[] = []
 ): { intersections: Intersection<T>[]; totalIntersections: number } {
 	const {
 		sortIntersectionsBy = 'cardinality',
@@ -206,9 +217,27 @@ function rankAndFilter<T>(
 	);
 	if (sortIntersectionsBy !== 'none') {
 		const dir = sortIntersectionsOrder === 'descending' ? -1 : 1;
+		// 'sets': compare the ascending set ranks of each intersection lexicographically, a prefix first.
+		// Descending (the default) puts the earliest-ranked sets first, matching how cardinality puts the
+		// biggest first.
+		const rk = new Map(order.map((s, i) => [s, i]));
+		const keys = new Map<Intersection<T>, number[]>();
+		if (sortIntersectionsBy === 'sets') {
+			for (const g of out) keys.set(g, g.sets.map((s) => rk.get(s) ?? 0).sort((x, y) => x - y));
+		}
+		const bySets = (a: Intersection<T>, b: Intersection<T>) => {
+			const ka = keys.get(a)!;
+			const kb = keys.get(b)!;
+			for (let i = 0; i < Math.min(ka.length, kb.length); i++) if (ka[i] !== kb[i]) return kb[i] - ka[i];
+			return kb.length - ka.length;
+		};
 		out = [...out].sort((a, b) => {
 			const primary =
-				sortIntersectionsBy === 'cardinality' ? a.size - b.size : a.degree - b.degree;
+				sortIntersectionsBy === 'sets'
+					? bySets(a, b)
+					: sortIntersectionsBy === 'cardinality'
+						? a.size - b.size
+						: a.degree - b.degree;
 			if (primary !== 0) return dir * primary;
 			// stable, readable tie-break: secondary metric, then by id
 			const secondary =
@@ -270,7 +299,11 @@ export function fromIntersections(
 		sets = [...sets].sort((a, b) => dir * (a.size - b.size));
 	}
 
-	const ranked = rankAndFilter(all, { sortIntersectionsBy: 'none', ...options });
+	const ranked = rankAndFilter(
+		all,
+		{ sortIntersectionsBy: 'none', ...options },
+		sets.map((s) => s.name)
+	);
 	return {
 		sets,
 		intersections: ranked.intersections,
@@ -321,4 +354,39 @@ export function sizeTicks(kind: UpSetScale, top: number): number[] | undefined {
 		for (const m of decades <= 2 ? [1, 2, 5] : [1]) if (m * p <= top) out.push(m * p);
 	}
 	return out;
+}
+
+// ---- export helpers --------------------------------------------------------------------------
+
+/** The rows behind an intersection (empty for an unknown id, or for precomputed input / `keepItems: false`). */
+export function membersOf<T>(result: Pick<UpSetResult<T>, 'intersections'>, id: string): T[] {
+	return result.intersections.find((g) => g.id === id)?.items ?? [];
+}
+
+export interface CsvOptions<T> {
+	/** Adds an `items` column: this text for each row of the intersection, joined with `;`. */
+	items?: (item: T) => string;
+}
+
+/**
+ * One line per intersection: `id,degree,size`, then a 0/1 column per set (in display order), then
+ * optionally the items. Fields with commas, quotes or newlines are quoted. Returns a string; saving
+ * it is up to the caller.
+ */
+export function toCSV<T>(
+	result: Pick<UpSetResult<T>, 'sets' | 'intersections'>,
+	options: CsvOptions<T> = {}
+): string {
+	const q = (v: string | number) => {
+		const s = String(v);
+		return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+	};
+	const names = result.sets.map((s) => s.name);
+	const lines = [['id', 'degree', 'size', ...names, ...(options.items ? ['items'] : [])].map(q).join(',')];
+	for (const g of result.intersections) {
+		const row: (string | number)[] = [g.id, g.degree, g.size, ...names.map((n) => (g.sets.includes(n) ? 1 : 0))];
+		if (options.items) row.push(g.items.map(options.items).join(';'));
+		lines.push(row.map(q).join(','));
+	}
+	return lines.join('\n') + '\n';
 }
