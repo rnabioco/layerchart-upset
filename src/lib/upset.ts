@@ -2,6 +2,17 @@ import { scaleLinear, scaleLog, scaleSymlog, type ScaleContinuousNumeric } from 
 
 export type UpSetMode = 'distinct' | 'intersect' | 'union';
 
+/** The filters a user can change at runtime (`filterControls`, `bind:`), as `onfilterchange` reports them. */
+export interface UpSetFilters {
+	minSize?: number;
+	maxSize?: number;
+	minDegree?: number;
+	maxDegree?: number;
+	limit?: number;
+	/** Sets removed from the plot. */
+	hiddenSets: string[];
+}
+
 export interface UpSetOptions {
 	/**
 	 * How items are assigned to intersections (mirrors ComplexUpset's `mode`):

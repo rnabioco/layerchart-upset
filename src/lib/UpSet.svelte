@@ -15,6 +15,7 @@
 		type PrecomputedIntersection,
 		type SetInfo,
 		type TooltipContext,
+		type UpSetFilters,
 		type UpSetOptions,
 		type UpSetReport,
 		type UpSetResult,
@@ -123,7 +124,13 @@
 		selectedSet?: string | null;
 		/** Called when a set is selected or cleared (null). `previous` is the set selected before, if any. */
 		onsetselect?: (set: SetInfo | null, previous: SetInfo | null) => void;
-		/** Controlled mode: selecting, pressing Escape, the scale toggle or choosing a set only calls the callback; `selected`, `selectedSet` and `scale` are never assigned internally. */
+		/** Sets removed from the plot (bindable). With `data` the intersections are recomputed without them; with precomputed `intersections`, columns containing a hidden set are dropped. */
+		hiddenSets?: string[];
+		/** Render a bar above the plot to change `minSize`, `minDegree`, `maxDegree`, `limit` and which sets are shown. */
+		filterControls?: boolean;
+		/** Called when a filter control changes any filter; with `controlled` it is the only effect. */
+		onfilterchange?: (filters: UpSetFilters, previous: UpSetFilters) => void;
+		/** Controlled mode: selecting, pressing Escape, the scale toggle, choosing a set or changing a filter only calls the callback; `selected`, `selectedSet`, `scale`, the filter props and `hiddenSets` are never assigned internally. */
 		controlled?: boolean;
 		/** Total intersections before truncation, when a precomputed list was cut elsewhere. */
 		intersectionsTotal?: number;
@@ -190,18 +197,28 @@
 		sortIntersectionsOrder,
 		sortSetsBy,
 		sortSetsOrder,
-		minSize,
-		maxSize,
-		minDegree,
-		maxDegree,
-		limit,
+		minSize = $bindable(),
+		maxSize = $bindable(),
+		minDegree = $bindable(),
+		maxDegree = $bindable(),
+		limit = $bindable(),
+		hiddenSets = $bindable([]),
+		filterControls = false,
+		onfilterchange,
 		keepItems,
 		...rest
 	}: Props = $props();
 
+	const visibleSets = $derived(sets.filter((s) => !hiddenSets.includes(s)));
+	const visibleIntersections = $derived(
+		intersections && hiddenSets.length
+			? intersections.filter((i) => !i.sets.some((s) => hiddenSets.includes(s)))
+			: intersections
+	);
+
 	const result = $derived<UpSetResult<T>>(
-		intersections
-			? (fromIntersections(sets, intersections, {
+		visibleIntersections
+			? (fromIntersections(visibleSets, visibleIntersections, {
 					setSizes,
 					total,
 					intersectionsTotal,
@@ -215,7 +232,7 @@
 					maxDegree,
 					limit
 				}) as UpSetResult<T>)
-			: computeUpset(data ?? [], sets, {
+			: computeUpset(data ?? [], visibleSets, {
 					mode,
 					sortIntersectionsBy,
 					sortIntersectionsOrder,
@@ -304,7 +321,7 @@
 	const focus = $derived(hovered ?? focused ?? selected);
 	/** Ids of the columns containing the selected set; null when no set is selected. */
 	const inSelectedSet = $derived(
-		selectedSet == null
+		selectedSet == null || !visibleSets.includes(selectedSet)
 			? null
 			: new Set(result.intersections.filter((i) => i.sets.includes(selectedSet!)).map((i) => i.id))
 	);
@@ -342,6 +359,47 @@
 		if (!controlled) selected = next;
 		onselect?.(next ? i : null, previous);
 	}
+
+	// ---- filters -----------------------------------------------------------------------------
+	const filtersNow = (): UpSetFilters => ({
+		minSize,
+		maxSize,
+		minDegree,
+		maxDegree,
+		limit,
+		hiddenSets: [...hiddenSets]
+	});
+	/** Apply a change: assign the props unless `controlled`, and report old and new either way. */
+	function changeFilters(patch: Partial<UpSetFilters>) {
+		const previous = filtersNow();
+		const next: UpSetFilters = { ...previous, ...patch };
+		if (!controlled) {
+			minSize = next.minSize;
+			maxSize = next.maxSize;
+			minDegree = next.minDegree;
+			maxDegree = next.maxDegree;
+			limit = next.limit;
+			hiddenSets = next.hiddenSets;
+		}
+		onfilterchange?.(next, previous);
+	}
+	const numberFilter = (key: 'minSize' | 'minDegree' | 'maxDegree' | 'limit') => (e: Event) => {
+		const el = e.currentTarget as HTMLInputElement;
+		const raw = el.value.trim();
+		const n = Number(raw);
+		changeFilters({ [key]: raw === '' || !Number.isFinite(n) ? undefined : n });
+		// controlled: the input shows what the owner holds, not what was typed
+		if (controlled) el.value = String({ minSize, minDegree, maxDegree, limit }[key] ?? '');
+	};
+	function toggleSetVisible(e: Event, name: string) {
+		changeFilters({
+			hiddenSets: hiddenSets.includes(name) ? hiddenSets.filter((s) => s !== name) : [...hiddenSets, name]
+		});
+		if (controlled) (e.currentTarget as HTMLInputElement).checked = !hiddenSets.includes(name);
+	}
+	const filtersActive = $derived(
+		minSize != null || maxSize != null || minDegree != null || maxDegree != null || limit != null || hiddenSets.length > 0
+	);
 
 	function selectSet(name: string) {
 		const info = result.sets.find((s) => s.name === name);
@@ -450,6 +508,83 @@
 		onhover?.(null);
 	}
 </script>
+
+{#if filterControls}
+	<div class="upset-filters" role="group" aria-label="Filters" data-upset-filters="">
+		<label>
+			min size
+			<input
+				type="number"
+				min="0"
+				value={minSize ?? ''}
+				placeholder="1"
+				data-upset-filter="minSize"
+				onchange={numberFilter('minSize')}
+			/>
+		</label>
+		<label>
+			min degree
+			<input
+				type="number"
+				min="1"
+				value={minDegree ?? ''}
+				placeholder="1"
+				data-upset-filter="minDegree"
+				onchange={numberFilter('minDegree')}
+			/>
+		</label>
+		<label>
+			max degree
+			<input
+				type="number"
+				min="1"
+				value={maxDegree ?? ''}
+				data-upset-filter="maxDegree"
+				onchange={numberFilter('maxDegree')}
+			/>
+		</label>
+		<label>
+			limit
+			<input
+				type="number"
+				min="1"
+				value={limit ?? ''}
+				data-upset-filter="limit"
+				onchange={numberFilter('limit')}
+			/>
+		</label>
+		<span class="upset-filter-sets">
+			{#each sets as name (name)}
+				<label>
+					<input
+						type="checkbox"
+						checked={!hiddenSets.includes(name)}
+						disabled={!hiddenSets.includes(name) && visibleSets.length <= 1}
+						data-upset-filter-set={name}
+						onchange={(e) => toggleSetVisible(e, name)}
+					/>
+					{labelOf(name)}
+				</label>
+			{/each}
+		</span>
+		<button
+			type="button"
+			disabled={!filtersActive}
+			data-upset-filter-reset=""
+			onclick={() =>
+				changeFilters({
+					minSize: undefined,
+					maxSize: undefined,
+					minDegree: undefined,
+					maxDegree: undefined,
+					limit: undefined,
+					hiddenSets: []
+				})}
+		>
+			reset
+		</button>
+	</div>
+{/if}
 
 <div
 	class="upset-scroll"
@@ -758,6 +893,41 @@
 		align-self: end;
 		padding-left: 4px;
 		opacity: 0.7;
+	}
+	.upset-filters {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 14px;
+		margin-bottom: 8px;
+		font-size: 0.9em;
+		color: var(--upset-control-fg, var(--upset-text, currentColor));
+	}
+	.upset-filters input[type='number'] {
+		width: 4.5em;
+		margin-left: 4px;
+		font: inherit;
+		color: inherit;
+		background: transparent;
+		border: 1px solid var(--upset-control-border, var(--upset-grid, color-mix(in srgb, currentColor 25%, transparent)));
+		border-radius: 3px;
+	}
+	.upset-filter-sets {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 2px 10px;
+	}
+	.upset-filters button {
+		font: inherit;
+		color: inherit;
+		background: transparent;
+		cursor: pointer;
+		border: 1px solid var(--upset-control-border, var(--upset-grid, color-mix(in srgb, currentColor 25%, transparent)));
+		border-radius: 3px;
+	}
+	.upset-filters button:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 	.upset-scale-toggle {
 		position: absolute;

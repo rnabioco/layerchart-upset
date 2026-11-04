@@ -20,11 +20,15 @@ adheres to [Semantic Versioning](https://semver.org/).
   `descending` (default) is that order, `ascending` reverses it.
 - `toCSV(result, { items })` and `membersOf(result, id)` helpers for getting the data behind the bars; they return
   values and never write files.
-
 - Set selection: clicking a set bar or row label (or Enter/Space on a set bar; Esc clears; Up/Down move) selects it.
   `selectedSet` is bindable, `onsetselect(set, previous)` reports, and columns without the set are dimmed.
   `controlled` applies. Set bars are now focusable buttons.
 - README and docs table list the scale, set-selection and `keepItems` props.
+- Interactive filtering: `minSize`, `maxSize`, `minDegree`, `maxDegree` and `limit` are now bindable, and
+  `hiddenSets` (bindable) removes sets from the plot. `filterControls` renders a bar above the plot (min size, min and
+  max degree, limit, a checkbox per set, reset); `onfilterchange(filters, previous)` reports every change. With
+  `data` the intersections are recomputed without a hidden set; with precomputed `intersections`, columns that contain
+  it are dropped. `controlled` applies: the controls then only call `onfilterchange` and snap back to the props.
 
 ### Changed
 

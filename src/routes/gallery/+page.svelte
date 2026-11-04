@@ -38,6 +38,10 @@
 	let boundScale = $state<'linear' | 'log' | 'symlog'>('linear');
 	let controlledScale = $state<'linear' | 'log' | 'symlog'>('linear');
 	let scaleCalls = $state<string[]>([]);
+	let fMin = $state<number | undefined>(10);
+	let fLimit = $state<number | undefined>(undefined);
+	let fHidden = $state<string[]>([]);
+	let filterCalls = $state<string[]>([]);
 	let pickedSet = $state<string | null>(null);
 	let controlledSet = $state<string | null>('Drama');
 	let setCalls = $state<string[]>([]);
@@ -389,6 +393,45 @@
 				/>
 			</div>
 			<p class="desc" data-testid="set-ctrl-calls">{setCalls.join(',')}</p>
+		</section>
+
+		<section>
+			<h2>Filter controls (bound)</h2>
+			<p class="desc">
+				<code>filterControls</code> renders a bar for min size, degree, limit and which sets to show; the filter
+				props are bindable.
+			</p>
+			<code>filterControls bind:minSize bind:limit bind:hiddenSets</code>
+			<div class="chart">
+				<UpSet
+					{data}
+					sets={genres}
+					filterControls
+					bind:minSize={fMin}
+					bind:limit={fLimit}
+					bind:hiddenSets={fHidden}
+				/>
+			</div>
+			<p class="desc" data-testid="filter-bound">
+				{JSON.stringify({ minSize: fMin ?? null, limit: fLimit ?? null, hiddenSets: fHidden })}
+			</p>
+		</section>
+
+		<section>
+			<h2>Filter controls (controlled)</h2>
+			<p class="desc">With <code>controlled</code> the controls only call <code>onfilterchange</code>.</p>
+			<code>controlled filterControls minSize={'{10}'} onfilterchange</code>
+			<div class="chart">
+				<UpSet
+					{data}
+					sets={genres}
+					filterControls
+					controlled
+					minSize={10}
+					onfilterchange={(next, prev) => (filterCalls = [...filterCalls, `${prev.minSize ?? ''}->${next.minSize ?? ''}`])}
+				/>
+			</div>
+			<p class="desc" data-testid="filter-ctrl-calls">{filterCalls.join(',')}</p>
 		</section>
 
 		<section class="themed">
