@@ -21,8 +21,9 @@ rendered from [\`src/routes/gallery/+page.svelte\`](https://github.com/rnabioco/
 `;
 for (const section of sections) {
 	const title = (await section.locator('h2').innerText()).trim();
-	const desc = (await section.locator('.desc').count()) ? (await section.locator('.desc').innerText()).trim() : '';
-	const props = (await section.locator('code').innerText()).trim();
+	const desc = (await section.locator(':scope > .desc').first().count()) ? (await section.locator(':scope > .desc').first().innerText()).trim() : '';
+	const code = section.locator(':scope > code').first();
+	const props = (await code.count()) ? (await code.innerText()).trim() : '';
 	const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 	await section.locator('.chart').screenshot({ path: `${outDir}/${slug}.png` });
 	md += `## ${title}\n\n${desc ? desc + '\n\n' : ''}\`\`\`svelte\n<UpSet ${props.startsWith('<') ? '' : '{data} {sets} '}${props.replace(/^<UpSet |\s*\/>$/g, '')} />\n\`\`\`\n\n![${title}](assets/gallery/${slug}.png)\n\n`;

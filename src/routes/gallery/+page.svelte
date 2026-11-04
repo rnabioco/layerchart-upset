@@ -266,6 +266,7 @@
 				<code>limit</code> drops intersections; <code>onresult</code> and the <code>footer</code> snippet say how
 				many.
 			</p>
+			<code>limit={'{8}'} onresult={'{(r) => …}'} {'{#snippet footer({ shown, total })} … {/snippet}'}</code>
 			<label>
 				limit
 				<select bind:value={hiddenLimit} data-testid="hidden-limit">
@@ -328,6 +329,11 @@
 	h2 {
 		font-size: 1rem;
 		margin: 0 0 0.25rem;
+	}
+	.desc code {
+		display: inline;
+		margin: 0;
+		padding: 0 4px;
 	}
 	code {
 		display: block;
