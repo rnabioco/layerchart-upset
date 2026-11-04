@@ -7,6 +7,7 @@ export type {
 	SetInfo,
 	TooltipContext,
 	UpSetOptions,
+	UpSetReport,
 	UpSetResult,
 	UpSetMode
 } from './upset.js';

@@ -57,6 +57,22 @@ export interface UpSetResult<T> {
 	intersections: Intersection<T>[];
 	/** Number of items in the input data. */
 	total: number;
+	/** Number of intersections before `limit` and the size/degree filters. */
+	totalIntersections: number;
+}
+
+/** What `onresult` and the `footer` snippet receive: how many intersections are drawn vs. exist. */
+export interface UpSetReport {
+	shown: number;
+	total: number;
+	hidden: number;
+}
+
+/** Summarise how many intersections are shown out of how many existed before filtering. */
+export function reportOf(result: Pick<UpSetResult<unknown>, 'intersections' | 'totalIntersections'>): UpSetReport {
+	const shown = result.intersections.length;
+	const total = result.totalIntersections;
+	return { shown, total, hidden: Math.max(0, total - shown) };
 }
 
 /** Build the set of members for a row given boolean (or truthy) membership columns. */
@@ -135,7 +151,7 @@ export function computeUpset<T extends Record<string, unknown>>(
 		}
 	}
 
-	const intersections = rankAndFilter([...groups.values()], {
+	const { intersections, totalIntersections } = rankAndFilter([...groups.values()], {
 		sortIntersectionsBy,
 		sortIntersectionsOrder,
 		minSize,
@@ -145,7 +161,7 @@ export function computeUpset<T extends Record<string, unknown>>(
 		limit
 	});
 
-	return { sets, intersections, total: data.length };
+	return { sets, intersections, total: data.length, totalIntersections };
 }
 
 type RankOptions = Pick<
@@ -159,7 +175,10 @@ type RankOptions = Pick<
 	| 'limit'
 >;
 
-function rankAndFilter<T>(all: Intersection<T>[], o: RankOptions): Intersection<T>[] {
+function rankAndFilter<T>(
+	all: Intersection<T>[],
+	o: RankOptions
+): { intersections: Intersection<T>[]; totalIntersections: number } {
 	const {
 		sortIntersectionsBy = 'cardinality',
 		sortIntersectionsOrder = 'descending',
@@ -185,7 +204,10 @@ function rankAndFilter<T>(all: Intersection<T>[], o: RankOptions): Intersection<
 			return a.id.localeCompare(b.id);
 		});
 	}
-	return limit != null ? out.slice(0, limit) : out;
+	return {
+		intersections: limit != null ? out.slice(0, limit) : out,
+		totalIntersections: all.length
+	};
 }
 
 export interface PrecomputedOptions extends UpSetOptions {
@@ -193,6 +215,11 @@ export interface PrecomputedOptions extends UpSetOptions {
 	setSizes?: Record<string, number>;
 	/** Total item count, used for percentages in tooltips. */
 	total?: number;
+	/**
+	 * Number of intersections that existed before the list was truncated elsewhere. Overrides the
+	 * length of the given list when reporting how many were hidden.
+	 */
+	intersectionsTotal?: number;
 }
 
 /**
@@ -205,7 +232,7 @@ export function fromIntersections(
 	input: PrecomputedIntersection[],
 	options: PrecomputedOptions = {}
 ): UpSetResult<never> {
-	const { setSizes, total, sortSetsBy = 'none', sortSetsOrder = 'descending' } = options;
+	const { setSizes, total, intersectionsTotal, sortSetsBy = 'none', sortSetsOrder = 'descending' } = options;
 	const known = new Set(setNames);
 	const all: Intersection<never>[] = input.map((raw) => {
 		for (const name of raw.sets) {
@@ -230,6 +257,11 @@ export function fromIntersections(
 		sets = [...sets].sort((a, b) => dir * (a.size - b.size));
 	}
 
-	const intersections = rankAndFilter(all, { sortIntersectionsBy: 'none', ...options });
-	return { sets, intersections, total: total ?? NaN };
+	const ranked = rankAndFilter(all, { sortIntersectionsBy: 'none', ...options });
+	return {
+		sets,
+		intersections: ranked.intersections,
+		total: total ?? NaN,
+		totalIntersections: intersectionsTotal ?? ranked.totalIntersections
+	};
 }

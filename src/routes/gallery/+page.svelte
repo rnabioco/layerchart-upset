@@ -25,6 +25,8 @@
 		{ id: 'e', sets: ['KO vs WT', 'aged vs young', 'treated vs control'], size: 2 }
 	];
 	let pickedCounted = $state<string | null>('c');
+	let hiddenLimit = $state(8);
+	let lastReport = $state('');
 	let selected = $state<string | null>(null);
 	let selectedDark = $state<string | null>('Drama&Comedy');
 
@@ -207,6 +209,37 @@
 					bind:selected={selectedDark}
 				/>
 			</div>
+		</section>
+
+		<section>
+			<h2>Hidden count (limit + footer)</h2>
+			<p class="desc">
+				<code>limit</code> drops intersections; <code>onresult</code> and the <code>footer</code> snippet say how
+				many.
+			</p>
+			<label>
+				limit
+				<select bind:value={hiddenLimit} data-testid="hidden-limit">
+					<option value={4}>4</option>
+					<option value={8}>8</option>
+					<option value={12}>12</option>
+				</select>
+			</label>
+			<div class="chart">
+				<UpSet
+					{data}
+					sets={genres}
+					limit={hiddenLimit}
+					onresult={(r) => (lastReport = JSON.stringify(r))}
+				>
+					{#snippet footer({ shown, total })}
+						<p class="desc" data-testid="hidden-footer">
+							the largest {shown} of {total} combinations are drawn
+						</p>
+					{/snippet}
+				</UpSet>
+			</div>
+			<p class="desc" data-testid="hidden-result">{lastReport}</p>
 		</section>
 	</div>
 </main>
