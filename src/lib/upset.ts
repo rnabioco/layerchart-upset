@@ -52,6 +52,9 @@ export interface UpSetOptions {
 /** `showEmpty` is ignored above this many sets (2^20 combinations). */
 export const MAX_EMPTY_SETS = 20;
 
+/** `mode: 'union'` (and the dense `intersect` path) use a 2^n table, so they stop at this many sets (64 MB). */
+const MAX_DENSE_SETS = 24;
+
 /** Every combination of `order` within the degree bounds, in ascending combination-mask order. */
 function allCombos(order: string[], minDegree: number, maxDegree: number): string[][] {
 	if (order.length > MAX_EMPTY_SETS) return [];
@@ -118,6 +121,26 @@ export function reportOf(result: Pick<UpSetResult<unknown>, 'intersections' | 't
 	return { shown, total, hidden: Math.max(0, total - shown) };
 }
 
+/**
+ * Intersection id for a list of set names: names joined with `&`. A `&` or `\` inside a name is escaped with a
+ * backslash, so `A`+`B` (`A&B`) and the single set `A&B` (`A\&B`) cannot collide. Names without those
+ * characters give the same ids as before.
+ */
+export function intersectionId(members: string[]): string {
+	return members.map((m) => m.replace(/[\\&]/g, '\\$&')).join('&');
+}
+
+function assertUniqueSets(setNames: string[]): void {
+	const seen = new Set<string>();
+	for (const n of setNames) {
+		if (seen.has(n)) throw new Error(`Duplicate set name "${n}"`);
+		seen.add(n);
+	}
+}
+
+/** Masks are 32-bit integers, so combination logic stops here; `distinct` mode goes on without them. */
+const MAX_MASK_SETS = 30;
+
 /** Build the set of members for a row given boolean (or truthy) membership columns. */
 function membership<T extends Record<string, unknown>>(row: T, sets: string[]): string[] {
 	return sets.filter((s) => Boolean(row[s]));
@@ -148,6 +171,7 @@ export function computeUpset<T extends Record<string, unknown>>(
 		keepItems = true
 	} = options;
 
+	assertUniqueSets(setNames);
 	const sizes = new Map<string, number>(setNames.map((s) => [s, 0]));
 	for (const row of data) for (const s of membership(row, setNames)) sizes.set(s, sizes.get(s)! + 1);
 
@@ -158,53 +182,97 @@ export function computeUpset<T extends Record<string, unknown>>(
 	}
 	const order = sets.map((s) => s.name);
 
-	const groups = new Map<string, Intersection<T>>();
-	const groupOf = (members: string[]) => {
-		const id = members.join('&');
-		let g = groups.get(id);
-		if (!g) {
-			g = { id, sets: members, degree: members.length, size: 0, items: [] };
-			groups.set(id, g);
-		}
-		return g;
-	};
-
-	// Rows with the same memberships hit the same groups, so work them out once per membership mask.
-	// Within a mask, groups come in ascending combination-mask order (the order they were created in
-	// before), which matters for `sortIntersectionsBy: 'none'`.
-	const bit = new Map(order.map((s, i) => [s, 1 << i]));
-	const comboOf = (mask: number) => order.filter((_, i) => mask & (1 << i));
-	const hitCache = new Map<number, Intersection<T>[]>();
-	const hitsFor = (M: number): Intersection<T>[] => {
-		let hits = hitCache.get(M);
-		if (hits) return hits;
-		hits = [];
-		if (mode === 'distinct') {
-			hits.push(groupOf(comboOf(M)));
-		} else if (mode === 'intersect') {
-			// every non-empty subset of the row's own memberships, ascending
-			for (let s = (0 - M) & M; s !== 0; s = (s - M) & M) hits.push(groupOf(comboOf(s)));
-		} else {
-			for (let s = 1; s < 1 << order.length; s++) if (s & M) hits.push(groupOf(comboOf(s)));
-		}
-		hitCache.set(M, hits);
-		return hits;
-	};
-
-	for (const row of data) {
-		let M = 0;
-		for (const s of membership(row, setNames)) M |= bit.get(s) ?? 0;
-		if (M === 0) continue;
-		for (const g of hitsFor(M)) {
-			if (keepItems) g.items.push(row);
+	if (order.length > MAX_MASK_SETS) {
+		if (mode !== 'distinct')
+			throw new Error(`mode "${mode}" supports at most ${MAX_MASK_SETS} sets (got ${order.length}); use "distinct".`);
+		// Too many sets for 32-bit masks: group rows by their member list directly.
+		const wide = new Map<string, Intersection<T>>();
+		for (const row of data) {
+			const members = order.filter((s) => Boolean(row[s]));
+			if (members.length === 0) continue;
+			const id = intersectionId(members);
+			let g = wide.get(id);
+			if (!g) wide.set(id, (g = { id, sets: members, degree: members.length, size: 0, items: [] }));
 			g.size++;
+			if (keepItems) g.items.push(row);
+		}
+		const r = rankAndFilter(
+			[...wide.values()],
+			{ sortIntersectionsBy, sortIntersectionsOrder, minSize, maxSize, minDegree, maxDegree, limit },
+			order
+		);
+		return { sets, intersections: r.intersections, total: data.length, totalIntersections: r.totalIntersections };
+	}
+
+	// Work on integer masks (bit i = the i-th set in display order) and build ids only for the groups that
+	// exist. Counting never touches the rows again: each distinct membership mask is counted once, then
+	// expanded to the combinations it belongs to.
+	const n = order.length;
+	const bitOf = new Map(order.map((s, i) => [s, 1 << i]));
+	const comboOf = (mask: number) => order.filter((_, i) => mask & (1 << i));
+	const rowMasks = new Int32Array(data.length);
+	const distinct = new Map<number, number>(); // membership mask -> rows, in first-seen order
+	data.forEach((row, r) => {
+		let M = 0;
+		for (const s of membership(row, setNames)) M |= bitOf.get(s) ?? 0;
+		rowMasks[r] = M;
+		if (M !== 0) distinct.set(M, (distinct.get(M) ?? 0) + 1);
+	});
+
+	const counts = new Map<number, number>(); // combination mask -> size, in group order
+	const add = (mask: number, by: number) => counts.set(mask, (counts.get(mask) ?? 0) + by);
+	if (mode === 'distinct') {
+		for (const [M, c] of distinct) counts.set(M, c);
+	} else {
+		let sparseCost = 0;
+		for (const M of distinct.keys()) sparseCost += 2 ** popcount(M);
+		const denseCost = n * 2 ** n;
+		if (mode === 'intersect' && !(n <= MAX_DENSE_SETS && sortIntersectionsBy !== 'none' && sparseCost > denseCost)) {
+			// every non-empty subset of the row's own memberships, ascending
+			for (const [M, c] of distinct) for (let s = (0 - M) & M; s !== 0; s = (s - M) & M) add(s, c);
+		} else {
+			if (n > MAX_DENSE_SETS)
+				throw new Error(`mode "union" supports at most ${MAX_DENSE_SETS} sets (got ${n}); use "distinct" or "intersect".`);
+			// one 2^n table and an n-pass sum over subsets/supersets instead of a loop per distinct mask
+			const f = new Int32Array(1 << n);
+			let nonEmpty = 0;
+			for (const [M, c] of distinct) {
+				f[M] = c;
+				nonEmpty += c;
+			}
+			const full = (1 << n) - 1;
+			if (mode === 'intersect') {
+				// rows whose membership contains the combination
+				for (let i = 0; i < n; i++) for (let m = 0; m <= full; m++) if (!(m & (1 << i))) f[m] += f[m | (1 << i)];
+				for (let m = 1; m <= full; m++) if (f[m] > 0) counts.set(m, f[m]);
+			} else {
+				// rows overlapping the combination = all rows minus rows entirely inside its complement
+				for (let i = 0; i < n; i++) for (let m = 0; m <= full; m++) if (m & (1 << i)) f[m] += f[m ^ (1 << i)];
+				for (let m = 1; m <= full; m++) {
+					const c = nonEmpty - f[full ^ m];
+					if (c > 0) counts.set(m, c);
+				}
+			}
+		}
+	}
+	if (showEmpty && n <= MAX_EMPTY_SETS) {
+		for (let m = 1; m < 1 << n; m++) {
+			const d = popcount(m);
+			if (d >= minDegree && d <= maxDegree && !counts.has(m)) counts.set(m, 0);
 		}
 	}
 
-	if (showEmpty) for (const combo of allCombos(order, minDegree, maxDegree)) groupOf(combo);
+	const maskOf = new Map<Intersection<T>, number>();
+	const all: Intersection<T>[] = [];
+	for (const [mask, size] of counts) {
+		const members = comboOf(mask);
+		const g: Intersection<T> = { id: intersectionId(members), sets: members, degree: members.length, size, items: [] };
+		maskOf.set(g, mask);
+		all.push(g);
+	}
 
 	const { intersections, totalIntersections } = rankAndFilter(
-		[...groups.values()],
+		all,
 		{
 			sortIntersectionsBy,
 			sortIntersectionsOrder,
@@ -217,7 +285,72 @@ export function computeUpset<T extends Record<string, unknown>>(
 		order
 	);
 
+	if (keepItems) attachItems(intersections, maskOf, rowMasks, data, mode);
 	return { sets, intersections, total: data.length, totalIntersections };
+}
+
+function popcount(m: number): number {
+	let c = 0;
+	for (; m; m &= m - 1) c++;
+	return c;
+}
+
+/**
+ * Give each kept intersection a lazy `items`: the rows are bucketed once, on the first read of any
+ * `items`, and only into the intersections that survived the filters and `limit`.
+ */
+function attachItems<T>(
+	kept: Intersection<T>[],
+	maskOf: Map<Intersection<T>, number>,
+	rowMasks: Int32Array,
+	data: T[],
+	mode: UpSetMode
+): void {
+	let buckets: Map<Intersection<T>, T[]> | null = null;
+	const build = () => {
+		const b = new Map<Intersection<T>, T[]>(kept.map((g) => [g, []]));
+		const byMask = new Map<number, Intersection<T>>(kept.map((g) => [maskOf.get(g)!, g]));
+		const hitCache = new Map<number, Intersection<T>[]>();
+		const hitsFor = (M: number): Intersection<T>[] => {
+			let hits = hitCache.get(M);
+			if (hits) return hits;
+			hits = [];
+			if (mode === 'distinct') {
+				const g = byMask.get(M);
+				if (g) hits.push(g);
+			} else if (mode === 'intersect' && 2 ** popcount(M) <= kept.length) {
+				for (let s = (0 - M) & M; s !== 0; s = (s - M) & M) {
+					const g = byMask.get(s);
+					if (g) hits.push(g);
+				}
+			} else {
+				for (const g of kept) {
+					const m = maskOf.get(g)!;
+					if (mode === 'union' ? (m & M) !== 0 : (m & M) === m) hits.push(g);
+				}
+			}
+			hitCache.set(M, hits);
+			return hits;
+		};
+		for (let r = 0; r < data.length; r++) {
+			const M = rowMasks[r];
+			if (M !== 0) for (const g of hitsFor(M)) b.get(g)!.push(data[r]);
+		}
+		return b;
+	};
+	for (const g of kept) {
+		Object.defineProperty(g, 'items', {
+			enumerable: true,
+			configurable: true,
+			get() {
+				buckets ??= build();
+				return buckets.get(g)!;
+			},
+			set(v: T[]) {
+				Object.defineProperty(g, 'items', { value: v, writable: true, enumerable: true, configurable: true });
+			}
+		});
+	}
 }
 
 type RankOptions = Pick<
@@ -310,14 +443,17 @@ export function fromIntersections(
 	options: PrecomputedOptions = {}
 ): UpSetResult<never> {
 	const { setSizes, total, intersectionsTotal, sortSetsBy = 'none', sortSetsOrder = 'descending' } = options;
+	assertUniqueSets(setNames);
 	const known = new Set(setNames);
 	const all: Intersection<never>[] = input.map((raw) => {
 		for (const name of raw.sets) {
 			if (!known.has(name)) throw new Error(`Intersection references unknown set "${name}"`);
 		}
+		if (typeof raw.size !== 'number' || !Number.isFinite(raw.size) || raw.size < 0)
+			throw new Error(`Intersection "${raw.id ?? raw.sets.join('&')}" has an invalid size (${String(raw.size)}); expected a number >= 0`);
 		const members = setNames.filter((n) => raw.sets.includes(n));
 		return {
-			id: raw.id != null ? String(raw.id) : members.join('&'),
+			id: raw.id != null ? String(raw.id) : intersectionId(members),
 			sets: members,
 			degree: members.length,
 			size: raw.size,
@@ -326,10 +462,16 @@ export function fromIntersections(
 		};
 	});
 
+	const ids = new Set<string>();
+	for (const g of all) {
+		if (ids.has(g.id)) throw new Error(`Duplicate intersection id "${g.id}"`);
+		ids.add(g.id);
+	}
+
 	if (options.showEmpty) {
 		const have = new Set(all.map((g) => g.id));
 		for (const combo of allCombos(setNames, options.minDegree ?? 1, options.maxDegree ?? Infinity)) {
-			const id = combo.join('&');
+			const id = intersectionId(combo);
 			if (!have.has(id)) all.push({ id, sets: combo, degree: combo.length, size: 0, items: [] });
 		}
 	}

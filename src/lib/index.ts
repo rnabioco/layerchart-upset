@@ -1,5 +1,5 @@
 export { default as UpSet } from './UpSet.svelte';
-export { computeUpset, fromIntersections, membersOf, queryCounts, stackSegments, toCSV } from './upset.js';
+export { computeUpset, fromIntersections, intersectionId, membersOf, queryCounts, stackSegments, toCSV } from './upset.js';
 export { exportSVG, exportPNG } from './export.js';
 export type { ExportOptions } from './export.js';
 export type {

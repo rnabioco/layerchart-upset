@@ -6,6 +6,32 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- `computeUpset` is faster. Rows are counted once per distinct membership mask, and `union` (and large `intersect`
+  inputs) use a 2^n subset-sum table instead of looping over every combination per mask. 15 sets x 1e5 rows now take
+  well under 2 s in every mode.
+- `Intersection.items` is filled lazily, on the first read of any `items`, and only for the columns that survive the
+  filters and `limit`. Output is otherwise identical.
+- `mode: 'union'` throws above 24 sets (it used to run for minutes or return nothing). With `sortIntersectionsBy:
+  'none'`, `union` columns now come in ascending combination-mask order.
+- The default tooltip / `aria-label` text is computed once per column instead of on every pointer move.
+- Duplicate set names, and precomputed intersections with a non-finite or negative `size` or a repeated `id`, now
+  throw instead of producing wrong counts.
+
+### Added
+
+- `intersectionId(members)`: the id `computeUpset` gives a combination of sets.
+
+### Fixed
+
+- More than 31 sets no longer wrap the 32-bit mask and merge unrelated rows. `distinct` mode works for any number of
+  sets; `intersect` and `union` throw above 30 (and `union` above 24).
+- A set name containing `&` no longer collides with a combination: `&` and `\` inside a name are escaped in ids
+  (`A\&B`). Ids of ordinary names are unchanged.
+- A selected column that is no longer drawn (its set was hidden, a filter removed it) no longer leaves every other
+  column dimmed. The selection value itself is left alone, so the column is highlighted again if it comes back.
+
 ## [0.5.0] - 2026-11-05
 
 ### Added

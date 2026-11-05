@@ -379,7 +379,12 @@
 	let root: HTMLDivElement | undefined = $state();
 	let hovered = $state<string | null>(null);
 	let focused = $state<string | null>(null);
-	const focus = $derived(hovered ?? focused ?? selected);
+	// A hovered, focused or selected column that is no longer drawn (its set was hidden, a filter removed it)
+	// must not leave every other column dimmed.
+	const focus = $derived.by(() => {
+		const id = hovered ?? focused ?? selected;
+		return id != null && result.intersections.some((i) => i.id === id) ? id : null;
+	});
 	/** Ids of the columns containing the selected set; null when no set is selected. */
 	const inSelectedSet = $derived(
 		selectedSet == null || !visibleSets.includes(selectedSet)
@@ -431,12 +436,24 @@
 		if (stackBy != null && queries?.length) warnOnce('stack-queries', '`stackBy` and `queries` together: ignoring `queries`.');
 	});
 
-	const describe = (i: Intersection<T>) => {
+	const describeNow = (i: Intersection<T>) => {
 		if (describeProp) return describeProp(i);
 		const pct = Number.isFinite(result.total) && result.total > 0 ? ` (${((100 * i.size) / result.total).toFixed(1)}%)` : '';
 		const q = activeQueries.map((query, k) => ` · ${query.id}: ${formatSize(counts.get(i.id)?.[k] ?? 0)}`).join('');
 		const s = (stack?.segments.get(i.id) ?? []).map((g) => ` · ${g.category}: ${formatSize(g.n)}`).join('');
 		return `${i.sets.map(labelOf).join(' ∩ ')}: ${formatSize(i.size)}${pct}${q}${s}`;
+	};
+	// One text per column, kept until something it depends on changes, so a pointer move over a bar
+	// does not call `describe` (or a user's `describeProp`) again.
+	const describeCache = $derived.by(() => {
+		void [describeProp, result, activeQueries, counts, stack, setLabels, formatSize];
+		return new Map<string, string>();
+	});
+	const describe = (i: Intersection<T>) => {
+		const cache = describeCache;
+		let text = cache.get(i.id);
+		if (text === undefined) cache.set(i.id, (text = describeNow(i)));
+		return text;
 	};
 
 	function select(i: Intersection<T>) {
