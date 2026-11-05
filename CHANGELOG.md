@@ -18,6 +18,8 @@ adheres to [Semantic Versioning](https://semver.org/).
   counts matter.
 - `sortIntersectionsBy: 'sets'` orders intersections by set rank (the matrix row order): A, A&B, A&B&C, A&C, B, …
   `descending` (default) is that order, `ascending` reverses it.
+- `normalize="total"` labels the size axes and bar labels as a percentage of all items (counts when the total is
+  unknown). Bar lengths and tooltips are unchanged.
 - `showEmpty` option: also lists combinations no item has, as size-0 columns (degree filters apply, `minSize`
   defaults to 0, ignored above 20 sets). Works with `data` and with precomputed intersections.
 - `exportSVG(el)` and `exportPNG(el, scale)`: export the plot as a standalone SVG string or a PNG blob, with computed

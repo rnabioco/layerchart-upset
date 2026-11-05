@@ -457,6 +457,28 @@
 			<p class="desc" data-testid="export-svg" hidden>{exportSvg}</p>
 		</section>
 
+		<section>
+			<h2>Percent axis</h2>
+			<p class="desc">
+				<code>normalize="total"</code> labels the axes and bar labels as a share of all items. Without a known
+				total (precomputed, no <code>total</code>) counts stay.
+			</p>
+			<code>normalize="total"</code>
+			<div class="chart" data-testid="pct-data">
+				<UpSet {data} sets={genres} minSize={20} normalize="total" />
+			</div>
+			<div class="chart" data-testid="pct-nototal">
+				<UpSet
+					sets={['A', 'B']}
+					intersections={[
+						{ sets: ['A'], size: 30 },
+						{ sets: ['B'], size: 20 }
+					]}
+					normalize="total"
+				/>
+			</div>
+		</section>
+
 		<section class="themed">
 			<h2>CSS custom properties</h2>
 			<code>no colour props; --upset-bar, --upset-dot-off, ... set on an ancestor</code>
