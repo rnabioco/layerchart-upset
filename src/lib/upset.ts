@@ -126,6 +126,13 @@ export function reportOf(result: Pick<UpSetResult<unknown>, 'intersections' | 't
  * backslash, so `A`+`B` (`A&B`) and the single set `A&B` (`A\&B`) cannot collide. Names without those
  * characters give the same ids as before.
  */
+/** Largest of `values`, at least `floor`. Loop-based: spreading a big array into `Math.max` throws RangeError. */
+export function maxOf(values: Iterable<number>, floor = 1): number {
+	let m = floor;
+	for (const v of values) if (v > m) m = v;
+	return m;
+}
+
 export function intersectionId(members: string[]): string {
 	return members.map((m) => m.replace(/[\\&]/g, '\\$&')).join('&');
 }

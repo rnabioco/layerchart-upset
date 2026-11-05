@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	LOG_FLOOR,
+	maxOf,
 	clampSize,
 	computeUpset,
 	intersectionId,
@@ -457,5 +458,14 @@ describe('set identity and input validation', () => {
 		expect(() =>
 			fromIntersections(['A', 'B'], [{ sets: ['A'], size: 1 }, { id: 'A', sets: ['B'], size: 2 }])
 		).toThrow(/Duplicate intersection id "A"/);
+	});
+});
+
+describe('maxOf', () => {
+	it('matches Math.max with a floor and survives huge arrays', () => {
+		expect(maxOf([3, 7, 2], 1)).toBe(7);
+		expect(maxOf([], 1)).toBe(1);
+		expect(maxOf([0, -2], 1)).toBe(1);
+		expect(maxOf(Array.from({ length: 300000 }, (_, i) => i), 1)).toBe(299999);
 	});
 });

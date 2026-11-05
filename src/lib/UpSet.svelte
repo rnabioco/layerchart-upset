@@ -13,6 +13,7 @@
 		queryCounts,
 		stackSegments,
 		reportOf,
+		maxOf,
 		type AnnotationContext,
 		type StackBy,
 		type Intersection,
@@ -313,8 +314,8 @@
 		Array.from({ length: Math.max(0, minSlots - result.intersections.length) }, (_, j) => `\0empty-${j}`)
 	);
 	const ids = $derived([...result.intersections.map((i) => i.id), ...placeholders]);
-	const maxSetSize = $derived(Math.max(1, ...result.sets.map((s) => s.size)));
-	const topSize = $derived(Math.max(1, ...result.intersections.map((i) => i.size)));
+	const maxSetSize = $derived(maxOf(result.sets.map((s) => s.size), 1));
+	const topSize = $derived(maxOf(result.intersections.map((i) => i.size), 1));
 
 	// ---- size scales -------------------------------------------------------------------------
 	const setKind = $derived(setScale ?? scale);
@@ -433,6 +434,8 @@
 		if (stackBy != null && !rowsUsable) warnOnce('stack-rows', '`stackBy` needs `data` and keepItems !== false; ignoring it.');
 		if (stackBy != null && rowsUsable && scale !== 'linear')
 			warnOnce('stack-scale', '`stackBy` needs the linear scale; drawing totals.');
+		if (limit == null && result.intersections.length > 1000)
+			warnOnce('big', `${result.intersections.length} columns drawn; set \`limit\` to keep the plot responsive.`);
 		if (stackBy != null && queries?.length) warnOnce('stack-queries', '`stackBy` and `queries` together: ignoring `queries`.');
 	});
 

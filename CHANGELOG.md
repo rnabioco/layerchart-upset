@@ -28,6 +28,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Results with ~2e5 columns no longer throw `RangeError` from `Math.max(...)`, and drawing more than 1000 columns with
+  no `limit` logs a one-time warning. Nothing is truncated.
 - More than 31 sets no longer wrap the 32-bit mask and merge unrelated rows. `distinct` mode works for any number of
   sets; `intersect` and `union` throw above 30 (and `union` above 24).
 - A set name containing `&` no longer collides with a combination: `&` and `\` inside a name are escaped in ids
