@@ -72,8 +72,8 @@
 		font: inherit;
 		font-size: 0.75em;
 		padding: 0.15rem 0.5rem;
-		color: #555;
-		background: #fff;
+		color: var(--muted);
+		background: var(--bg);
 		border: 1px solid var(--rule);
 		border-radius: 4px;
 		cursor: pointer;

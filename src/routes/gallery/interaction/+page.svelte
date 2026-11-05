@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { UpSet } from '../../../lib/index.js';
 	import { genres, makeData } from '../../demo-data.js';
+	import CodeBlock from '../CodeBlock.svelte';
+
+	let { data: examples } = $props();
 
 	const data = makeData();
 
@@ -23,11 +26,12 @@
 	let setCalls = $state<string[]>([]);
 </script>
 
+<CodeBlock html={examples.script} label="Show setup script" />
+
 <div class="grid">
 	<section>
 		<h2>Selection and highlighting</h2>
 		<p class="desc">Click a column. highlightColor + dimOpacity.</p>
-		<code>{`bind:selected highlightColor="#e53e3e" dimOpacity={0.15}`}</code>
 		<div class="chart">
 			<UpSet
 				{data}
@@ -41,6 +45,7 @@
 			<small>selected: {selected ?? 'none'}</small>
 			<div data-set-hover>hovered set: {hoverSet ?? 'none'}</div>
 		</div>
+		<CodeBlock html={examples.code["Selection and highlighting"]} />
 	</section>
 
 	<section>
@@ -49,7 +54,6 @@
 			Hover or Tab to a bar. The tooltip is a snippet, and every bar is a button (Enter/Space select, arrows move,
 			Esc clears).
 		</p>
-		<code>{`{#snippet tooltip(t)}{t.text}{/snippet}`}</code>
 		<div class="chart">
 			<UpSet {data} sets={genres} minSize={15}>
 				{#snippet tooltip(t)}
@@ -62,12 +66,12 @@
 				{/snippet}
 			</UpSet>
 		</div>
+		<CodeBlock html={examples.code["Custom tooltip"]} />
 	</section>
 
 	<section>
 		<h2>Controlled selection</h2>
 		<p class="desc">The owner holds the selection; clicks only notify through onselect.</p>
-		<code>{`controlled selected={pick} onselect={(i) => (pick = i?.id ?? null)}`}</code>
 		<div class="chart">
 			<UpSet
 				intersections={counted}
@@ -80,11 +84,11 @@
 			<small data-calls>calls: {controlledCalls.map((c) => c ?? 'null').join(',')}</small>
 			<button type="button" data-set-pick onclick={() => (controlledPick = 'a')}>select a</button>
 		</div>
+		<CodeBlock html={examples.code["Controlled selection"]} />
 	</section>
 
 	<section>
 		<h2>onselect previous argument</h2>
-		<code>{`onselect={(selected, previous) => log(selected?.id, previous?.id)}`}</code>
 		<div class="chart">
 			<UpSet
 				{data}
@@ -93,6 +97,7 @@
 				onselect={(s, p) => selectCalls.push(`${s?.id ?? 'null'},${p?.id ?? 'null'}`)}
 			/>
 		</div>
+		<CodeBlock html={examples.code["onselect previous argument"]} />
 		<pre data-calls>{selectCalls.join('\n')}</pre>
 	</section>
 
@@ -101,17 +106,16 @@
 		<p class="desc">
 			Click a set bar or row label to keep only the columns that contain it; Esc or a second click clears.
 		</p>
-		<code>{`bind:selectedSet onsetselect={(set, previous) => log(set?.name)}`}</code>
 		<div class="chart">
 			<UpSet {data} sets={genres} minSize={10} bind:selectedSet={pickedSet} />
 		</div>
+		<CodeBlock html={examples.code["Set selection (bound)"]} />
 		<p class="desc" data-testid="set-bound">{pickedSet ?? 'none'}</p>
 	</section>
 
 	<section>
 		<h2>Set selection (controlled)</h2>
 		<p class="desc">With <code>controlled</code> the owner decides; <code>onsetselect</code> only reports.</p>
-		<code>{`controlled selectedSet={mine} onsetselect={(set) => (mine = set?.name ?? null)}`}</code>
 		<div class="chart">
 			<UpSet
 				{data}
@@ -122,6 +126,7 @@
 				onsetselect={(s, p) => (setCalls = [...setCalls, `${p?.name ?? 'none'}->${s?.name ?? 'none'}`])}
 			/>
 		</div>
+		<CodeBlock html={examples.code["Set selection (controlled)"]} />
 		<p class="desc" data-testid="set-ctrl-calls">{setCalls.join(',')}</p>
 	</section>
 </div>

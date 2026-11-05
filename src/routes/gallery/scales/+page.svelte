@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { UpSet } from '../../../lib/index.js';
+	import CodeBlock from '../CodeBlock.svelte';
+
+	let { data: examples } = $props();
 
 	// Counts spanning four decades, for the log-scale sections.
 	const decades = ['H3K4me3', 'H3K27ac', 'CTCF'];
@@ -16,6 +19,8 @@
 	let scaleCalls = $state<string[]>([]);
 </script>
 
+<CodeBlock html={examples.script} label="Show setup script" />
+
 <div class="grid">
 	<section>
 		<h2>Size scale (bound)</h2>
@@ -23,7 +28,6 @@
 			<code>scaleToggle</code> adds a button; <code>bind:scale</code> follows it. Sizes span four decades and one
 			combination is empty, so the toggle picks <code>symlog</code>.
 		</p>
-		<code>{`bind:scale scaleToggle minSize={0}`}</code>
 		<div class="chart">
 			<UpSet
 				intersections={decadeCounts}
@@ -34,13 +38,13 @@
 				bind:scale={boundScale}
 			/>
 		</div>
+		<CodeBlock html={examples.code["Size scale (bound)"]} />
 		<p class="desc" data-testid="scale-bound">{boundScale}</p>
 	</section>
 
 	<section>
 		<h2>Size scale (controlled)</h2>
 		<p class="desc">With <code>controlled</code> the toggle only calls <code>onscalechange</code>.</p>
-		<code>{`controlled scale={mine} scaleToggle onscalechange={(next) => (mine = next)}`}</code>
 		<div class="chart">
 			<UpSet
 				intersections={decadeCounts.filter((d) => d.size > 0)}
@@ -52,6 +56,7 @@
 				onscalechange={(next, prev) => (scaleCalls = [...scaleCalls, `${prev}->${next}`])}
 			/>
 		</div>
+		<CodeBlock html={examples.code["Size scale (controlled)"]} />
 		<p class="desc" data-testid="scale-ctrl-calls">{scaleCalls.join(',')}</p>
 		<p class="desc" data-testid="scale-ctrl-value">{controlledScale}</p>
 	</section>
@@ -59,7 +64,6 @@
 	<section>
 		<h2>Size scale (set panel override)</h2>
 		<p class="desc"><code>scale="log"</code> on the intersections, <code>setScale="linear"</code> on the set bars.</p>
-		<code>scale="log" setScale="linear"</code>
 		<div class="chart">
 			<UpSet
 				intersections={decadeCounts.filter((d) => d.size > 0)}
@@ -69,5 +73,6 @@
 				setScale="linear"
 			/>
 		</div>
+		<CodeBlock html={examples.code["Size scale (set panel override)"]} />
 	</section>
 </div>

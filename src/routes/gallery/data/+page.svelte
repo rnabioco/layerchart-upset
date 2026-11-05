@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { UpSet, exportPNG, exportSVG } from '../../../lib/index.js';
 	import { genres, makeData } from '../../demo-data.js';
+	import CodeBlock from '../CodeBlock.svelte';
+
+	let { data: examples } = $props();
 
 	const data = makeData();
 
@@ -24,6 +27,8 @@
 	};
 </script>
 
+<CodeBlock html={examples.script} label="Show setup script" />
+
 <div class="grid">
 	<section>
 		<h2>Precomputed intersections</h2>
@@ -31,9 +36,6 @@
 			Pass counts you already have instead of per-item rows. Order is kept as given; emphasise one row; reserve empty
 			slots; no set-size panel.
 		</p>
-		<code
-			>{`intersections={counted} sets={contrasts} emphasizedSets={['KO vs WT']} minSlots={8} yTicks={[0, 20, 40]} bind:selected`}</code
-		>
 		<div class="chart">
 			<UpSet
 				intersections={counted}
@@ -45,6 +47,7 @@
 				bind:selected={pickedCounted}
 			/>
 		</div>
+		<CodeBlock html={examples.code["Precomputed intersections"]} />
 	</section>
 
 	<section>
@@ -53,10 +56,10 @@
 			<code>showEmpty</code> lists combinations nobody has as size-0 columns. <code>exportSVG</code> and
 			<code>exportPNG</code> take the wrapper element.
 		</p>
-		<code>showEmpty scaleToggle</code>
 		<div class="chart" bind:this={exportBox} data-testid="export-box">
 			<UpSet data={data.slice(0, 25)} sets={genres.slice(0, 4)} showEmpty scaleToggle />
 		</div>
+		<CodeBlock html={examples.code["Empty intersections and export"]} />
 		<button type="button" data-testid="export-run" onclick={exportNow}>Export</button>
 		<p class="desc" data-testid="export-png">{exportPng}</p>
 		<p class="desc" data-testid="export-svg" hidden>{exportSvg}</p>
@@ -68,7 +71,6 @@
 			Each query draws an overlay in every column, as tall as the number of its rows that pass
 			<code>filter</code>. Hover a column to see the counts.
 		</p>
-		<code>{`queries={[{ id: 'first half', color: '#f6ad55', filter: (r) => r.id < 300 }, { id: 'every 10th', color: '#c53030', filter: (r) => r.id % 10 === 0 }]}`}</code>
 		<div class="chart" data-testid="queries">
 			<UpSet
 				{data}
@@ -80,6 +82,7 @@
 				]}
 			/>
 		</div>
+		<CodeBlock html={examples.code["Query overlays"]} />
 	</section>
 
 	<section>
@@ -88,9 +91,9 @@
 			<code>stackBy</code> splits each bar by a row attribute. Linear scale only; <code>stackLegend</code> adds the
 			swatches.
 		</p>
-		<code>{`stackBy="era" stackLegend stackColors={{ '1990s': '#4e79a7' }}`}</code>
 		<div class="chart" data-testid="stacked">
 			<UpSet {data} sets={genres} minSize={15} stackBy="era" stackLegend />
 		</div>
+		<CodeBlock html={examples.code["Stacked bars"]} />
 	</section>
 </div>

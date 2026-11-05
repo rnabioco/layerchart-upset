@@ -22,7 +22,7 @@
 	main.gallery {
 		font-family: system-ui, sans-serif;
 		padding: 1.5rem;
-		color: #222;
+		color: var(--fg);
 		max-width: 1300px;
 		margin: 0 auto;
 	}
@@ -34,12 +34,12 @@
 	}
 	nav a[aria-current='page'] {
 		font-weight: 600;
-		color: #222;
+		color: var(--fg);
 		text-decoration: none;
 	}
 	.gallery :global(.lede),
 	.gallery :global(.desc) {
-		color: #555;
+		color: var(--muted);
 		margin: 0.25rem 0;
 	}
 	.gallery :global(.grid) {
@@ -48,7 +48,7 @@
 		gap: 1.5rem;
 	}
 	.gallery :global(section) {
-		border: 1px solid #e4e4e7;
+		border: 1px solid var(--rule);
 		border-radius: 8px;
 		padding: 1rem;
 		overflow-x: auto;
@@ -65,7 +65,7 @@
 	.gallery :global(code) {
 		display: block;
 		font-size: 12px;
-		background: #f4f4f5;
+		background: var(--code-bg);
 		padding: 4px 8px;
 		border-radius: 4px;
 		margin: 0.5rem 0;

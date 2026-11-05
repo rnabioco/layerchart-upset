@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { UpSet } from '../../../lib/index.js';
 	import { genres, makeData } from '../../demo-data.js';
+	import CodeBlock from '../CodeBlock.svelte';
+
+	let { data: examples } = $props();
 
 	const data = makeData();
 
@@ -12,13 +15,14 @@
 	let lastReport = $state('');
 </script>
 
+<CodeBlock html={examples.script} label="Show setup script" />
+
 <div class="grid">
 	<section>
 		<h2>Hidden count (limit + footer)</h2>
 		<p class="desc">
 			<code>limit</code> drops intersections; <code>onresult</code> and the <code>footer</code> snippet say how many.
 		</p>
-		<code>{`limit={8} onresult={(r) => (report = r)}`}</code>
 		<label>
 			limit
 			<select bind:value={hiddenLimit} data-testid="hidden-limit">
@@ -41,6 +45,7 @@
 				{/snippet}
 			</UpSet>
 		</div>
+		<CodeBlock html={examples.code["Hidden count (limit + footer)"]} />
 		<p class="desc" data-testid="hidden-result">{lastReport}</p>
 	</section>
 
@@ -50,7 +55,6 @@
 			<code>filterControls</code> renders a bar for min size, degree, limit and which sets to show; the filter props
 			are bindable.
 		</p>
-		<code>{`filterControls bind:minSize bind:limit bind:hiddenSets`}</code>
 		<div class="chart">
 			<UpSet
 				{data}
@@ -61,6 +65,7 @@
 				bind:hiddenSets={fHidden}
 			/>
 		</div>
+		<CodeBlock html={examples.code["Filter controls (bound)"]} />
 		<p class="desc" data-testid="filter-bound">
 			{JSON.stringify({ minSize: fMin ?? null, limit: fLimit ?? null, hiddenSets: fHidden })}
 		</p>
@@ -69,7 +74,6 @@
 	<section>
 		<h2>Filter controls (controlled)</h2>
 		<p class="desc">With <code>controlled</code> the controls only call <code>onfilterchange</code>.</p>
-		<code>{`controlled filterControls minSize={10} onfilterchange={(next) => (filters = next)}`}</code>
 		<div class="chart">
 			<UpSet
 				{data}
@@ -80,6 +84,7 @@
 				onfilterchange={(next, prev) => (filterCalls = [...filterCalls, `${prev.minSize ?? ''}->${next.minSize ?? ''}`])}
 			/>
 		</div>
+		<CodeBlock html={examples.code["Filter controls (controlled)"]} />
 		<p class="desc" data-testid="filter-ctrl-calls">{filterCalls.join(',')}</p>
 	</section>
 </div>

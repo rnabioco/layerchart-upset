@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import './theme.css';
+	import ThemeToggle from './ThemeToggle.svelte';
 
 	let { children } = $props();
 
@@ -25,6 +27,7 @@
 			{/each}
 			<a href="https://www.npmjs.com/package/layerchart-upset">npm</a>
 			<a href="https://github.com/rnabioco/layerchart-upset">GitHub</a>
+			<ThemeToggle />
 		</nav>
 	</header>
 	{@render children()}
@@ -32,17 +35,14 @@
 
 <style>
 	.site {
-		--rule: #e4e4e7;
-		--code-bg: #f4f4f5;
-		--link: #2b6cb0;
 		font-family: system-ui, sans-serif;
-		color: #222;
+		color: var(--fg);
 	}
 	header {
 		position: sticky;
 		top: 0;
 		z-index: 10;
-		background: #fff;
+		background: var(--bg);
 		display: flex;
 		flex-wrap: wrap;
 		align-items: baseline;
@@ -58,6 +58,7 @@
 	nav {
 		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
 		gap: 0.25rem 1.1rem;
 	}
 	nav a {

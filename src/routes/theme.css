@@ -1,0 +1,44 @@
+/* Site theme. `data-theme` on <html> is set before first paint by the inline script in app.html and flipped by
+   ThemeToggle. The --upset-* properties are the component's own theming hooks (see the Theming gallery page),
+   so the charts follow the site without any prop. */
+:root {
+	color-scheme: light;
+	--bg: #fff;
+	--fg: #222;
+	--muted: #555;
+	--rule: #e4e4e7;
+	--code-bg: #f4f4f5;
+	--link: #2b6cb0;
+}
+:root[data-theme='dark'] {
+	color-scheme: dark;
+	--bg: #0f1115;
+	--fg: #e4e4e7;
+	--muted: #a1a1aa;
+	--rule: #2e3138;
+	--code-bg: #1a1d23;
+	--link: #63b3ed;
+	--upset-text: #e4e4e7;
+	--upset-bar: #63b3ed;
+	--upset-dot-off: #3b4252;
+	--upset-grid: #343944;
+	--upset-stripe: rgb(255 255 255 / 0.05);
+}
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+}
+
+/* shiki is run with a light and a dark theme (defaultColor: false): each token carries both colors as variables. */
+.shiki,
+.shiki span {
+	color: var(--shiki-light);
+}
+:root[data-theme='dark'] .shiki,
+:root[data-theme='dark'] .shiki span {
+	color: var(--shiki-dark);
+}
+pre.shiki {
+	background: var(--code-bg);
+}

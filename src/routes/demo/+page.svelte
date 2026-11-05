@@ -46,7 +46,6 @@
 	main {
 		font-family: system-ui, sans-serif;
 		padding: 1.5rem;
-		color: #222;
 	}
 	.controls {
 		display: flex;
