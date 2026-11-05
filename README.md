@@ -71,7 +71,8 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `dotRadius` `connectorWidth` `barPadding` `barRadius` `fontSize` | .3 3 .3 2 12 | geometry / typography |
 | `intersectionLabel` `setLabel` | – | axis titles |
 | `showLabels` `stripes` `tooltips` | true | toggles |
-| `selected` (bindable) | | id of the selected intersection (click / Enter / Space) |
+| `selected` (bindable) | | id of the selected intersection (click / Enter / Space); Esc or the Clear button resets it |
+| `clearButton` | `true` | show a "Clear selection" button while a column or set is selected |
 | `selectedSet` (bindable) | | name of the selected set (click a set bar or row label, Enter/Space, Esc clears); columns without it are dimmed |
 | `onsetselect(set, previous)` | | called when a set is selected or cleared (`null`) |
 | `scale` (bindable) `setScale` | `linear` | size scale of the bars: `linear`, `log` or `symlog` (shows 0); `setScale` overrides the set-size panel |
