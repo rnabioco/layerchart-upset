@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `publish.yml`: stages the package on npm (`npm stage publish`, trusted publishing) when a GitHub release is
+  published; approve it with `npm stage approve`.
+  
 ### Changed
 
 - The documentation site is now the SvelteKit app itself, prerendered to static files with `adapter-static` and

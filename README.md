@@ -3,7 +3,20 @@
 An [UpSet plot](https://upset.app/) Svelte 5 component built on [LayerChart](https://www.layerchart.com/),
 with an API modelled on R's [ComplexUpset](https://krassowski.github.io/complex-upset/).
 
+[![npm](https://img.shields.io/npm/v/layerchart-upset)](https://www.npmjs.com/package/layerchart-upset)
+
 ![UpSet plot](docs/upset.png)
+
+## Install
+
+```sh
+npm install layerchart-upset
+```
+
+Requires Svelte 5 (a peer dependency). `layerchart` and `d3-scale` come with the package. Then import `UpSet`, give it
+`data` and `sets`, and size it with the props below. Releases are listed in the [changelog](CHANGELOG.md).
+
+## Use
 
 ```svelte
 <script>
@@ -158,6 +171,10 @@ its own `--upset-tooltip-fg` / `--upset-tooltip-bg`.
 ## Development
 
 `npm run check`, `npm test` and `npm run build` run in CI on every push and PR.
+
+Releases: bump the version and changelog in a PR, tag `vX.Y.Z` and publish a GitHub release. The `Publish` workflow
+then stages the package on npm (`npm stage publish`, trusted publishing); a maintainer approves it with
+`npm stage approve <id>`.
 
 ## License
 
