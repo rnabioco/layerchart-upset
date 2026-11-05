@@ -59,6 +59,22 @@
 	</section>
 
 	<section>
+		<h2>Annotation row</h2>
+		<p class="desc">
+			An <code>annotation</code> snippet renders once per column, between the bars and the matrix, aligned with the
+			column. Here it shows each column's share of all items.
+		</p>
+		<code>{`{#snippet annotation({ intersection })}{Math.round((100 * intersection.size) / total)}%{/snippet}`}</code>
+		<div class="chart" data-testid="annotated">
+			<UpSet {data} sets={genres} minSize={25} annotationHeight={22}>
+				{#snippet annotation({ intersection })}
+					<small>{Math.round((100 * intersection.size) / data.length)}%</small>
+				{/snippet}
+			</UpSet>
+		</div>
+	</section>
+
+	<section>
 		<h2>maxWidth: scroll inside the root</h2>
 		<p class="desc">40 intersections capped at 600px; the plot scrolls horizontally.</p>
 		<code>{`maxWidth={600} limit={40}`}</code>

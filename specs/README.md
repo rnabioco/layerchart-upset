@@ -121,7 +121,7 @@ clone); `exportPNG(el, scale): Promise<Blob>`. Tests: `export_svg_has_all_bars`,
 - Tests: `stack_segments_sum_to_size`, `stack_order_default_by_count`, `stack_log_falls_back` (unit);
   `stack_segment_colors`, `stack_keeps_selection`, `stack_legend_matches_segments` (browser).
 
-## S10 — Per-column annotation snippet
+## S10 — Per-column annotation snippet  *(implemented)*
 
 *Reviewed.* `annotation?: Snippet<[AnnotationContext<T>]>` with `{ intersection, index, x, width, height }`, and
 `annotationHeight?: number` (default 24).

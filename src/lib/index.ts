@@ -3,6 +3,7 @@ export { computeUpset, fromIntersections, membersOf, queryCounts, stackSegments,
 export { exportSVG, exportPNG } from './export.js';
 export type { ExportOptions } from './export.js';
 export type {
+	AnnotationContext,
 	CsvOptions,
 	Intersection,
 	PrecomputedIntersection,
