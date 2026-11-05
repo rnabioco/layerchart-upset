@@ -6,11 +6,21 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-05
+
 ### Added
 
 - `annotation` snippet and `annotationHeight`: an HTML row between the size bars and the matrix, rendered once per
   column with `{ intersection, index, x, width, height }`. Absent unless passed, so the default layout is unchanged.
   `AnnotationContext` is exported.
+- `stackBy` (with `stackColors`, `stackOrder`, `stackLegend`): split each size bar into segments by a row attribute.
+  Linear scale and `data` only; `stackSegments()` and the `StackBy` type are exported.
+- `queries`: highlight subsets inside every column. Each `{ id, color, filter }` draws an overlay bar as tall as the
+  number of the column's rows that pass `filter`; the default tooltip lists the counts. Works on every scale and is
+  ignored (with a warning) for precomputed input or `keepItems: false`. `queryCounts()` and the `UpSetQuery` type are
+  exported.
+- `publish.yml`: stages the package on npm (`npm stage publish`, trusted publishing) when a GitHub release is
+  published; approve it with `npm stage approve`.
 
 ### Changed
 
@@ -18,24 +28,6 @@ adheres to [Semantic Versioning](https://semver.org/).
   default on), and Esc now clears from anywhere once you have clicked the plot, not only when a bar has focus. Esc and
   the button clear the selected column and the selected set together. `controlled` plots still only call
   `onselect` / `onsetselect`.
-
-### Added
-
-- `stackBy` (with `stackColors`, `stackOrder`, `stackLegend`): split each size bar into segments by a row attribute.
-  Linear scale and `data` only; `stackSegments()` and the `StackBy` type are exported.
-
-- `queries`: highlight subsets inside every column. Each `{ id, color, filter }` draws an overlay bar as tall as the
-  number of the column's rows that pass `filter`; the default tooltip lists the counts. Works on every scale and is
-  ignored (with a warning) for precomputed input or `keepItems: false`. `queryCounts()` and the `UpSetQuery` type are
-  exported.
-
-### Added
-
-- `publish.yml`: stages the package on npm (`npm stage publish`, trusted publishing) when a GitHub release is
-  published; approve it with `npm stage approve`.
-  
-### Changed
-
 - The documentation site is now the SvelteKit app itself, prerendered to static files with `adapter-static` and
   published on GitHub Pages: docs home (rendered from `docs/index.md`), `/demo` and the live gallery at `/gallery`.
   Zensical and the screenshot pipeline (`scripts/gallery.mjs`) are removed. The interactive demo moved from `/` to
@@ -158,7 +150,8 @@ Initial release.
   GitHub Pages.
 - CI (type check, unit tests, build + publint) and Dependabot for npm and GitHub Actions.
 
-[Unreleased]: https://github.com/rnabioco/layerchart-upset/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/rnabioco/layerchart-upset/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/rnabioco/layerchart-upset/compare/v0.2.0...v0.2.1
