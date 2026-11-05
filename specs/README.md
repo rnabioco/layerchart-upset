@@ -67,7 +67,7 @@ Tests: `to_csv_escapes_quotes`, `members_of_unknown_id_is_empty`. Non-goal: file
 columns not containing the set dim. Tests: `set_select_dims_other_columns`, `controlled_set_select_only_notifies`.
 Non-goal: multi-select.
 
-## S6 — Query overlays
+## S6 — Query overlays  *(implemented)*
 
 *Reviewed.* `queries?: { id: string; color: string; filter(item: T): boolean }[]`.
 

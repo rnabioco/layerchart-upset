@@ -4,6 +4,7 @@ import {
 	clampSize,
 	computeUpset,
 	membersOf,
+	queryCounts,
 	reportOf,
 	toCSV,
 	sizeDomain,
@@ -276,6 +277,31 @@ describe('computeUpset modes against a brute-force reference', () => {
 		const t = performance.now();
 		computeUpset(big, many, { mode: 'intersect', keepItems: false });
 		expect(performance.now() - t).toBeLessThan(5000);
+	});
+});
+
+describe('queryCounts', () => {
+	const rows = data.map((r, i) => ({ ...r, i }));
+	it('query_counts_match_filter', () => {
+		const result = computeUpset(rows, sets);
+		const even = (r: { i: number }) => r.i % 2 === 0;
+		const counts = queryCounts(result, [
+			{ id: 'even', color: 'red', filter: even },
+			{ id: 'none', color: 'blue', filter: () => false },
+			{ id: 'all', color: 'green', filter: () => true }
+		]);
+		for (const g of result.intersections) {
+			const [e, none, all] = counts.get(g.id)!;
+			expect(e).toBe(g.items.filter(even).length);
+			expect(none).toBe(0);
+			expect(all).toBe(g.size);
+		}
+	});
+
+	it('query_ignored_without_items', () => {
+		const result = computeUpset(rows, sets, { keepItems: false });
+		const counts = queryCounts(result, [{ id: 'all', color: 'red', filter: () => true }]);
+		expect([...counts.values()].every((c) => c[0] === 0)).toBe(true);
 	});
 });
 

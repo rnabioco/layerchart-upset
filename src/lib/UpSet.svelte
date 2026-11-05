@@ -10,6 +10,7 @@
 		sizeDomain,
 		sizeScale,
 		sizeTicks,
+		queryCounts,
 		reportOf,
 		type Intersection,
 		type PrecomputedIntersection,
@@ -17,6 +18,7 @@
 		type TooltipContext,
 		type UpSetFilters,
 		type UpSetOptions,
+		type UpSetQuery,
 		type UpSetReport,
 		type UpSetResult,
 		type UpSetScale
@@ -51,6 +53,13 @@
 		yTicks?: number[];
 		/** Number formatter for the y axis and bar labels. */
 		formatSize?: (n: number) => string;
+		/**
+		 * Subsets to highlight inside every column: each query draws an overlay bar (same width as the size bar)
+		 * as tall as the number of the column's rows that pass `filter`. Overlays are painted in array order, so
+		 * list the largest first; they do not stack. Needs `data` and `keepItems !== false` (otherwise ignored
+		 * with a console warning). Overlays ignore the pointer, and the default tooltip lists the counts.
+		 */
+		queries?: UpSetQuery<T>[];
 		/** `total` labels the size axes and bar labels as a percentage of all items (bar lengths do not change). Needs a known total: with precomputed `intersections` pass `total`, otherwise counts are shown. */
 		normalize?: 'none' | 'total';
 		/** Width/height of one matrix cell, px. */
@@ -210,6 +219,7 @@
 		keepItems,
 		showEmpty,
 		normalize = 'none',
+		queries,
 		...rest
 	}: Props = $props();
 
@@ -365,10 +375,23 @@
 		return emphasizedSets.includes(name) ? `${l} ${emphasisMarker}`.trim() : l;
 	};
 
+	// Queries need the rows: with precomputed input or keepItems=false they are ignored (warned once).
+	const queriesUsable = $derived(!intersections && keepItems !== false);
+	const activeQueries = $derived(queriesUsable ? (queries ?? []) : []);
+	const counts = $derived(queryCounts(result, activeQueries));
+	let warnedQueries = false;
+	$effect(() => {
+		if (queries?.length && !queriesUsable && !warnedQueries) {
+			warnedQueries = true;
+			console.warn('UpSet: `queries` need `data` and keepItems !== false; ignoring them.');
+		}
+	});
+
 	const describe = (i: Intersection<T>) => {
 		if (describeProp) return describeProp(i);
 		const pct = Number.isFinite(result.total) && result.total > 0 ? ` (${((100 * i.size) / result.total).toFixed(1)}%)` : '';
-		return `${i.sets.map(labelOf).join(' ∩ ')}: ${formatSize(i.size)}${pct}`;
+		const q = activeQueries.map((query, k) => ` · ${query.id}: ${formatSize(counts.get(i.id)?.[k] ?? 0)}`).join('');
+		return `${i.sets.map(labelOf).join(' ∩ ')}: ${formatSize(i.size)}${pct}${q}`;
 	};
 
 	function select(i: Intersection<T>) {
@@ -700,6 +723,26 @@
 							onpointermove={(e: PointerEvent) => tipAtPointer(intersectionCtx(d), e)}
 							onpointerleave={leave}
 						/>
+						{#each activeQueries as q, k (q.id)}
+							{@const n = counts.get(d.id)?.[k] ?? 0}
+							{#if n > 0}
+								{@const qy = ys(clampSize(scale, n))}
+								<Rect
+									{x}
+									y={qy}
+									width={xs.bandwidth()}
+									height={Math.max(0, context.height - qy)}
+									fill={q.color}
+									fillOpacity={opacity(d.id)}
+									corners={[barRadius, barRadius, 0, 0]}
+									class="upset-query"
+									style="pointer-events: none"
+									data-upset-query={q.id}
+									data-id={d.id}
+									data-n={n}
+								/>
+							{/if}
+						{/each}
 						{#if showLabels}
 							<Text
 								value={axisFormat(d.size)}
