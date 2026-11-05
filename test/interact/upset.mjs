@@ -79,8 +79,9 @@ assert.equal(await pre.locator('[aria-pressed="true"]').count(), 0);
 ok('Escape clears selection');
 
 await page.keyboard.press('Tab');
-assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('data-id')), 'b');
-ok('every bar is a Tab stop');
+assert.notEqual(await page.evaluate(() => document.activeElement?.getAttribute('data-id')), 'b');
+assert.equal(await bars.evaluateAll((els) => els.filter((e) => e.getAttribute('tabindex') === '0').length), 1);
+ok('only one bar is a Tab stop (roving tabindex)');
 
 await page.evaluate(() => document.activeElement?.blur());
 await page.mouse.move(0, 0);
