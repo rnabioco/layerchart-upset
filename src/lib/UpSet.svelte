@@ -206,6 +206,7 @@
 		filterControls = false,
 		onfilterchange,
 		keepItems,
+		showEmpty,
 		...rest
 	}: Props = $props();
 
@@ -230,7 +231,8 @@
 					maxSize,
 					minDegree,
 					maxDegree,
-					limit
+					limit,
+					showEmpty
 				}) as UpSetResult<T>)
 			: computeUpset(data ?? [], visibleSets, {
 					mode,
@@ -243,7 +245,8 @@
 					minDegree,
 					maxDegree,
 					limit,
-					keepItems
+					keepItems,
+					showEmpty
 				})
 	);
 

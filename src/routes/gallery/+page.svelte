@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { UpSet } from '../../lib/index.js';
+	import { UpSet, exportPNG, exportSVG } from '../../lib/index.js';
 	import { genres, makeData } from '../demo-data.js';
 
 	const data = makeData();
@@ -42,6 +42,14 @@
 	let fLimit = $state<number | undefined>(undefined);
 	let fHidden = $state<string[]>([]);
 	let filterCalls = $state<string[]>([]);
+	let exportBox = $state<HTMLElement>();
+	let exportSvg = $state('');
+	let exportPng = $state('');
+	const exportNow = async () => {
+		exportSvg = exportSVG(exportBox!);
+		const blob = await exportPNG(exportBox!, 2);
+		exportPng = `${blob.type}:${blob.size}`;
+	};
 	let pickedSet = $state<string | null>(null);
 	let controlledSet = $state<string | null>('Drama');
 	let setCalls = $state<string[]>([]);
@@ -432,6 +440,21 @@
 				/>
 			</div>
 			<p class="desc" data-testid="filter-ctrl-calls">{filterCalls.join(',')}</p>
+		</section>
+
+		<section>
+			<h2>Empty intersections and export</h2>
+			<p class="desc">
+				<code>showEmpty</code> lists combinations nobody has as size-0 columns. <code>exportSVG</code> and
+				<code>exportPNG</code> take the wrapper element.
+			</p>
+			<code>showEmpty scaleToggle</code>
+			<div class="chart" bind:this={exportBox} data-testid="export-box">
+				<UpSet data={data.slice(0, 25)} sets={genres.slice(0, 4)} showEmpty scaleToggle />
+			</div>
+			<button type="button" data-testid="export-run" onclick={exportNow}>Export</button>
+			<p class="desc" data-testid="export-png">{exportPng}</p>
+			<p class="desc" data-testid="export-svg" hidden>{exportSvg}</p>
 		</section>
 
 		<section class="themed">

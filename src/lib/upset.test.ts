@@ -278,3 +278,33 @@ describe('computeUpset modes against a brute-force reference', () => {
 		expect(performance.now() - t).toBeLessThan(5000);
 	});
 });
+
+describe('showEmpty', () => {
+	it('show_empty_adds_missing_combinations', () => {
+		const base = computeUpset(data, sets);
+		const all = computeUpset(data, sets, { showEmpty: true });
+		expect(all.intersections).toHaveLength(7); // 2^3 - 1
+		expect(all.intersections.filter((g) => g.size === 0).length).toBe(7 - base.intersections.length);
+		// real columns keep their sizes; empty ones sort last under the default cardinality order
+		for (const g of base.intersections) expect(all.intersections.find((x) => x.id === g.id)!.size).toBe(g.size);
+		expect(all.intersections.slice(-2).every((g) => g.size === 0)).toBe(true);
+		expect(base.intersections.every((g) => g.size > 0)).toBe(true);
+	});
+
+	it('show_empty_respects_degree_filter', () => {
+		const r = computeUpset(data, sets, { showEmpty: true, minDegree: 2, maxDegree: 2 });
+		expect(r.intersections.map((g) => g.degree)).toEqual([2, 2, 2]);
+		expect(r.intersections.some((g) => g.size === 0)).toBe(true);
+	});
+
+	it('show_empty_precomputed_and_minsize', () => {
+		const r = fromIntersections(['A', 'B'], [{ sets: ['A'], size: 3 }], { showEmpty: true });
+		expect(r.intersections.map((g) => [g.id, g.size])).toEqual([
+			['A', 3],
+			['B', 0],
+			['A&B', 0]
+		]);
+		// an explicit minSize still wins
+		expect(computeUpset(data, sets, { showEmpty: true, minSize: 1 }).intersections.every((g) => g.size > 0)).toBe(true);
+	});
+});

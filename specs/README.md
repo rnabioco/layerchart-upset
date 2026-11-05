@@ -72,12 +72,12 @@ Non-goal: multi-select.
 `queries: { id, color, filter(item) }[]` draws a sub-bar per query. Requires `data` (not precomputed input);
 linear scale only (warn otherwise). Tests: `query_counts_match_filter`.
 
-## S7 — Empty intersections
+## S7 — Empty intersections  *(implemented)*
 
 `showEmpty?: boolean`: add absent combinations as size-0 columns. Under `scale='log'` uses `symlog`.
 Tests: `show_empty_adds_missing_combinations`, `show_empty_respects_degree_filter`.
 
-## S8 — SVG/PNG export
+## S8 — SVG/PNG export  *(implemented; the tooltip, filter bar and footer are not exported)*
 
 `exportSVG(el): string` composes the three panel SVGs and inlines computed fills (CSS custom properties are lost on
 clone); `exportPNG(el, scale): Promise<Blob>`. Tests: `export_svg_has_all_bars`, `export_inlines_colors`.
