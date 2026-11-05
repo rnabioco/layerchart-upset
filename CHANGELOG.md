@@ -21,6 +21,10 @@ adheres to [Semantic Versioning](https://semver.org/).
   its id when `sortSetsBy` / `sortSetsOrder` reorders the sets (`selected`, `focus` and URLs stay valid).
   `Intersection.sets` is still in display order.
 - `exportPNG(el, scale, options)` is now `exportPNG(el, { scale, ...options })`.
+- `tooltips` is removed: `tooltip` is now `boolean | Snippet` (`false` disables, `true` is the default, a snippet replaces
+  the content).
+- `stackBy`, `stackColors`, `stackOrder` and `stackLegend` are grouped into one `stack` prop,
+  `{ by, colors?, order?, legend? }` (type `StackOptions<T>`).
 - Removed the `data-set` attribute from intersection bars; it duplicated `data-id`.
 
 ### Changed

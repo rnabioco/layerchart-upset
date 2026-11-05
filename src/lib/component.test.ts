@@ -149,8 +149,7 @@ describe('UpSet (SSR markup)', () => {
 			() =>
 				(h = html({
 					intersections,
-					stackBy: 'g',
-					stackLegend: true,
+					stack: { by: 'g', legend: true },
 					queries: [{ id: 'q', color: 'red', filter: () => true }]
 				}))
 		).not.toThrow();
@@ -158,12 +157,17 @@ describe('UpSet (SSR markup)', () => {
 		expect(style(h, 'grid-template-columns')).toBe('0px 176px');
 	});
 
-	it('stackBy_with_data_renders_legend', () => {
+	it('stack_with_data_renders_legend', () => {
 		const rows = data.map((r, i) => ({ ...r, g: i % 2 ? 'x' : 'y' }));
-		const h = html({ data: rows, stackBy: 'g', stackLegend: true });
+		const h = html({ data: rows, stack: { by: 'g', legend: true } });
 		expect(h).toContain('data-upset-legend-item="x"');
 		expect(h).toContain('data-upset-legend-item="y"');
-		expect(html({ data: rows, stackBy: 'g', scale: 'log', stackLegend: true })).not.toContain('data-upset-legend');
+		expect(html({ data: rows, stack: { by: 'g', legend: true }, scale: 'log' })).not.toContain('data-upset-legend');
+	});
+
+	it('tooltip_false_and_snippet_accepted', () => {
+		expect(() => html({ data, tooltip: false })).not.toThrow();
+		expect(html({ data, tooltip: true })).toContain('upset-scroll');
 	});
 
 	it('data_attributes_stable', () => {

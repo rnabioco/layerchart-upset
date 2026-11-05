@@ -14,6 +14,7 @@ export type {
 	UpSetOptions,
 	UpSetQuery,
 	StackBy,
+	StackOptions,
 	StackResult,
 	Summary,
 	UpSetReport,

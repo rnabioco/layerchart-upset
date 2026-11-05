@@ -88,11 +88,11 @@
 	<section>
 		<h2>Stacked bars</h2>
 		<p class="desc">
-			<code>stackBy</code> splits each bar by a row attribute. Linear scale only; <code>stackLegend</code> adds the
+			<code>stack</code> splits each bar by a row attribute. Linear scale only; <code>stack.legend</code> adds the
 			swatches.
 		</p>
 		<div class="chart" data-testid="stacked">
-			<UpSet {data} sets={genres} minSize={15} stackBy="era" stackLegend />
+			<UpSet {data} sets={genres} minSize={15} stack={{ by: "era", legend: true }} />
 		</div>
 		<CodeBlock html={examples.code["Stacked bars"]} />
 	</section>

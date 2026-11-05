@@ -15,7 +15,7 @@
 		reportOf,
 		maxOf,
 		type AnnotationContext,
-		type StackBy,
+		type StackOptions,
 		type Intersection,
 		type PrecomputedIntersection,
 		type SetInfo,
@@ -70,13 +70,7 @@
 		 * Linear scale only (log scales draw the totals) and needs `data` and `keepItems !== false`; otherwise
 		 * ignored with a console warning. Wins over `queries`.
 		 */
-		stackBy?: StackBy<T>;
-		/** Segment colors by category (default: a built-in palette in stack order). */
-		stackColors?: Record<string, string>;
-		/** Categories bottom to top; the rest follow by overall count, descending. */
-		stackOrder?: string[];
-		/** Show a swatch legend above the plot. */
-		stackLegend?: boolean;
+		stack?: StackOptions<T>;
 		/**
 		 * A row of HTML between the size bars and the matrix: the snippet renders once per column, in a cell
 		 * aligned with that matrix column (`x` and `width` are relative to the matrix). Dims with the column.
@@ -127,12 +121,10 @@
 		/** Axis titles; omit to hide. */
 		intersectionLabel?: string;
 		setLabel?: string;
-		/** Hover/focus tooltips on intersection columns and set bars. */
-		tooltips?: boolean;
 		/** Text for an intersection: the tooltip, `aria-label` and `data-tip` of its bar. */
 		describe?: (intersection: Intersection<T>) => string;
-		/** Replace the default tooltip content. */
-		tooltip?: Snippet<[TooltipContext<T>]>;
+		/** Hover/focus tooltips on intersection columns and set bars: `false` disables them, `true` is the built-in one, a snippet replaces its content. */
+		tooltip?: boolean | Snippet<[TooltipContext<T>]>;
 		/** Called when the pointer or keyboard focus enters/leaves an intersection. */
 		onhover?: (intersection: Intersection<T> | null) => void;
 		/** Called when the pointer or keyboard focus enters/leaves a set bar or row label. Hover never changes `selectedSet`. */
@@ -212,9 +204,8 @@
 		fontSize = 12,
 		intersectionLabel,
 		setLabel,
-		tooltips = true,
 		describe: describeProp,
-		tooltip,
+		tooltip = true,
 		onhover,
 		onsethover,
 		'aria-label': ariaLabel = 'UpSet plot',
@@ -250,10 +241,7 @@
 		showEmpty,
 		normalize = 'none',
 		queries,
-		stackBy,
-		stackColors,
-		stackOrder,
-		stackLegend = false,
+		stack: stackProp,
 		clearButton = true,
 		annotation,
 		annotationHeight = 24,
@@ -426,13 +414,13 @@
 
 	// Queries need the rows: with precomputed input or keepItems=false they are ignored (warned once).
 	const rowsUsable = $derived(!intersections && keepItems !== false);
-	// stackBy: needs the rows and a linear scale; it wins over queries.
-	const stacking = $derived(stackBy != null && rowsUsable && scale === 'linear');
-	const activeQueries = $derived(rowsUsable && !stacking && !stackBy ? (queries ?? []) : []);
+	// stack: needs the rows and a linear scale; it wins over queries.
+	const stacking = $derived(stackProp != null && rowsUsable && scale === 'linear');
+	const activeQueries = $derived(rowsUsable && !stacking && !stackProp ? (queries ?? []) : []);
 	const counts = $derived(queryCounts(result, activeQueries));
-	const stack = $derived(stacking ? stackSegments(result, stackBy!, stackOrder) : null);
+	const stackData = $derived(stacking ? stackSegments(result, stackProp!.by, stackProp!.order) : null);
 	const PALETTE = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
-	const stackColor = (c: string) => stackColors?.[c] ?? PALETTE[(stack?.order.indexOf(c) ?? 0) % PALETTE.length];
+	const stackColor = (c: string) => stackProp?.colors?.[c] ?? PALETTE[(stackData?.order.indexOf(c) ?? 0) % PALETTE.length];
 	const warned = new Set<string>();
 	function warnOnce(key: string, msg: string) {
 		if (warned.has(key)) return;
@@ -441,25 +429,25 @@
 	}
 	$effect(() => {
 		if (queries?.length && !rowsUsable) warnOnce('queries', '`queries` need `data` and keepItems !== false; ignoring them.');
-		if (stackBy != null && !rowsUsable) warnOnce('stack-rows', '`stackBy` needs `data` and keepItems !== false; ignoring it.');
-		if (stackBy != null && rowsUsable && scale !== 'linear')
-			warnOnce('stack-scale', '`stackBy` needs the linear scale; drawing totals.');
+		if (stackProp != null && !rowsUsable) warnOnce('stack-rows', '`stack` needs `data` and keepItems !== false; ignoring it.');
+		if (stackProp != null && rowsUsable && scale !== 'linear')
+			warnOnce('stack-scale', '`stack` needs the linear scale; drawing totals.');
 		if (limit == null && result.intersections.length > 1000)
 			warnOnce('big', `${result.intersections.length} columns drawn; set \`limit\` to keep the plot responsive.`);
-		if (stackBy != null && queries?.length) warnOnce('stack-queries', '`stackBy` and `queries` together: ignoring `queries`.');
+		if (stackProp != null && queries?.length) warnOnce('stack-queries', '`stack` and `queries` together: ignoring `queries`.');
 	});
 
 	const describeNow = (i: Intersection<T>) => {
 		if (describeProp) return describeProp(i);
 		const pct = Number.isFinite(result.total) && result.total > 0 ? ` (${((100 * i.size) / result.total).toFixed(1)}%)` : '';
 		const q = activeQueries.map((query, k) => ` · ${query.id}: ${formatSize(counts.get(i.id)?.[k] ?? 0)}`).join('');
-		const s = (stack?.segments.get(i.id) ?? []).map((g) => ` · ${g.category}: ${formatSize(g.n)}`).join('');
+		const s = (stackData?.segments.get(i.id) ?? []).map((g) => ` · ${g.category}: ${formatSize(g.n)}`).join('');
 		return `${i.sets.map(labelOf).join(' ∩ ')}: ${formatSize(i.size)}${pct}${q}${s}`;
 	};
 	// One text per column, kept until something it depends on changes, so a pointer move over a bar
 	// does not call `describe` (or a user's `describeProp`) again.
 	const describeCache = $derived.by(() => {
-		void [describeProp, result, activeQueries, counts, stack, setLabels, formatSize];
+		void [describeProp, result, activeQueries, counts, stackData, setLabels, formatSize];
 		return new Map<string, string>();
 	});
 	const describe = (i: Intersection<T>) => {
@@ -586,12 +574,12 @@
 	let tip = $state<{ x: number; y: number; ctx: TooltipContext<T> } | null>(null);
 
 	function tipAtPointer(ctx: TooltipContext<T>, e: PointerEvent) {
-		if (!tooltips || !root) return;
+		if (tooltip === false || !root) return;
 		const r = root.getBoundingClientRect();
 		tip = { x: e.clientX - r.left, y: e.clientY - r.top, ctx };
 	}
 	function tipAtElement(ctx: TooltipContext<T>, el: Element) {
-		if (!tooltips || !root) return;
+		if (tooltip === false || !root) return;
 		const r = root.getBoundingClientRect();
 		const b = el.getBoundingClientRect();
 		tip = { x: b.left + b.width / 2 - r.left, y: b.top - r.top, ctx };
@@ -678,9 +666,9 @@
 
 <svelte:window onkeydown={windowKeydown} onpointerdowncapture={windowPointerdown} />
 
-{#if stackLegend && stack}
+{#if stackProp?.legend && stackData}
 	<ul class="upset-legend" aria-label="Stack categories" data-upset-legend="">
-		{#each stack.order as c (c)}
+		{#each stackData.order as c (c)}
 			<li data-upset-legend-item={c}>
 				<span class="upset-swatch" style:background={stackColor(c)}></span>{c}
 			</li>
@@ -852,7 +840,7 @@
 							width={xs.bandwidth()}
 							height={Math.max(0, context.height - y)}
 							{fill}
-							fillOpacity={stack ? 0 : opacity(d.id)}
+							fillOpacity={stackData ? 0 : opacity(d.id)}
 							stroke={isSel ? 'currentColor' : 'none'}
 							strokeWidth={isSel ? 2 : 0}
 							corners={[barRadius, barRadius, 0, 0]}
@@ -873,8 +861,8 @@
 							onpointermove={(e: PointerEvent) => tipAtPointer(intersectionCtx(d), e)}
 							onpointerleave={leave}
 						/>
-						{#if stack}
-							{@const segs = stack.segments.get(d.id) ?? []}
+						{#if stackData}
+							{@const segs = stackData.segments.get(d.id) ?? []}
 							{#each segs as seg, k (seg.category)}
 								{@const below = segs.slice(0, k).reduce((s, g) => s + g.n, 0)}
 								{@const top = ys(below + seg.n)}
@@ -1135,9 +1123,9 @@
 		<div class="upset-footer">{@render footer(report)}</div>
 	{/if}
 
-	{#if tooltips && tip}
+	{#if tooltip !== false && tip}
 		<div class="upset-tooltip" role="tooltip" style:left="{tip.x}px" style:top="{tip.y}px">
-			{#if tooltip}
+			{#if typeof tooltip === 'function'}
 				{@render tooltip(tip.ctx)}
 			{:else}
 				{tip.ctx.text}

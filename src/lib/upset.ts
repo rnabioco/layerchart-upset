@@ -604,7 +604,19 @@ export interface AnnotationContext<T> {
 	height: number;
 }
 
-/** The category of an item for `stackBy`: a key of the row or a function; missing values are `"(none)"`. */
+/** The category of an item for `stack`: a key of the row or a function; missing values are `"(none)"`. */
+/** The `stack` prop of `UpSet`: split each size bar by a row attribute. */
+export type StackOptions<T> = {
+	/** A key of the row or a function; missing values are `"(none)"`. */
+	by: StackBy<T>;
+	/** Segment colors by category (default: a built-in palette in stack order). */
+	colors?: Record<string, string>;
+	/** Categories bottom to top; the rest follow by overall count, descending. */
+	order?: string[];
+	/** Show a swatch legend above the plot. */
+	legend?: boolean;
+};
+
 export type StackBy<T> = (keyof T & string) | ((item: T) => string | null | undefined);
 
 export const STACK_NONE = '(none)';
