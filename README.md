@@ -63,6 +63,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `onsetselect(set, previous)` | | called when a set is selected or cleared (`null`) |
 | `scale` (bindable) `setScale` | `linear` | size scale of the bars: `linear`, `log` or `symlog` (shows 0); `setScale` overrides the set-size panel |
 | `scaleToggle` `onscalechange(next, previous)` | `false` | a button that switches linear ↔ log (symlog when a size is 0) |
+| `showEmpty` | `false` | also list combinations no item has, as size-0 columns (degree filters apply; `minSize` then defaults to 0; ignored above 20 sets). Under `scale="log"` zeros get no bar; use `symlog` to draw them |
 | `keepItems` | `true` | `false` leaves each intersection's `items` empty, for large inputs where only counts matter |
 | `controlled` | `false` | owner holds the interactive state: clicks, Enter/Space, Esc, set selection and the scale toggle only call their callbacks; `selected`, `selectedSet` and `scale` are never assigned internally |
 | `onselect(selected, previous)` | | called on every selection change; `previous` is the intersection that was selected before (or cleared), `null` if none |
@@ -79,6 +80,18 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 `computeUpset(data, sets, options)` is exported for use without the component.
 
 Run `npm run dev` for the demo page.
+
+## Exporting the figure
+
+`exportSVG(el)` returns a standalone SVG string of the plot and `exportPNG(el, scale = 2)` a `Promise<Blob>`. Pass
+the plot's wrapper element (`bind:this` on a parent `div` works). Computed colors and fonts are inlined, so themed
+plots render the same outside the page; the tooltip, filter bar and footer are not included.
+
+```ts
+import { exportSVG, exportPNG } from 'layerchart-upset';
+const svg = exportSVG(wrapper);
+const png = await exportPNG(wrapper, 3);
+```
 
 ## Controlled selection
 

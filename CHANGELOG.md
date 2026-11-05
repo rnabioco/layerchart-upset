@@ -18,6 +18,10 @@ adheres to [Semantic Versioning](https://semver.org/).
   counts matter.
 - `sortIntersectionsBy: 'sets'` orders intersections by set rank (the matrix row order): A, A&B, A&B&C, A&C, B, …
   `descending` (default) is that order, `ascending` reverses it.
+- `showEmpty` option: also lists combinations no item has, as size-0 columns (degree filters apply, `minSize`
+  defaults to 0, ignored above 20 sets). Works with `data` and with precomputed intersections.
+- `exportSVG(el)` and `exportPNG(el, scale)`: export the plot as a standalone SVG string or a PNG blob, with computed
+  colors and fonts inlined.
 - `toCSV(result, { items })` and `membersOf(result, id)` helpers for getting the data behind the bars; they return
   values and never write files.
 - Set selection: clicking a set bar or row label (or Enter/Space on a set bar; Esc clears; Up/Down move) selects it.

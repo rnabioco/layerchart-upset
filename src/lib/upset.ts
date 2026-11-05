@@ -41,6 +41,26 @@ export interface UpSetOptions {
 	 * counts matter: `items` is then empty, so `onselect` and tooltips see no rows.
 	 */
 	keepItems?: boolean;
+	/**
+	 * Also list combinations no item has, as size-0 columns (subject to the degree filters and `limit`).
+	 * `minSize` then defaults to 0 instead of 1. Capped at {@link MAX_EMPTY_SETS} sets, since there are 2^n − 1
+	 * combinations; above that nothing is added.
+	 */
+	showEmpty?: boolean;
+}
+
+/** `showEmpty` is ignored above this many sets (2^20 combinations). */
+export const MAX_EMPTY_SETS = 20;
+
+/** Every combination of `order` within the degree bounds, in ascending combination-mask order. */
+function allCombos(order: string[], minDegree: number, maxDegree: number): string[][] {
+	if (order.length > MAX_EMPTY_SETS) return [];
+	const out: string[][] = [];
+	for (let m = 1; m < 1 << order.length; m++) {
+		const combo = order.filter((_, i) => m & (1 << i));
+		if (combo.length >= minDegree && combo.length <= maxDegree) out.push(combo);
+	}
+	return out;
 }
 
 export interface Intersection<T> {
@@ -119,7 +139,8 @@ export function computeUpset<T extends Record<string, unknown>>(
 		sortIntersectionsOrder = 'descending',
 		sortSetsBy = 'cardinality',
 		sortSetsOrder = 'descending',
-		minSize = 1,
+		showEmpty = false,
+		minSize = showEmpty ? 0 : 1,
 		maxSize = Infinity,
 		minDegree = 1,
 		maxDegree = Infinity,
@@ -180,6 +201,8 @@ export function computeUpset<T extends Record<string, unknown>>(
 		}
 	}
 
+	if (showEmpty) for (const combo of allCombos(order, minDegree, maxDegree)) groupOf(combo);
+
 	const { intersections, totalIntersections } = rankAndFilter(
 		[...groups.values()],
 		{
@@ -206,6 +229,7 @@ type RankOptions = Pick<
 	| 'minDegree'
 	| 'maxDegree'
 	| 'limit'
+	| 'showEmpty'
 >;
 
 function rankAndFilter<T>(
@@ -217,7 +241,7 @@ function rankAndFilter<T>(
 	const {
 		sortIntersectionsBy = 'cardinality',
 		sortIntersectionsOrder = 'descending',
-		minSize = 1,
+		minSize = o.showEmpty ? 0 : 1,
 		maxSize = Infinity,
 		minDegree = 1,
 		maxDegree = Infinity,
@@ -301,6 +325,14 @@ export function fromIntersections(
 			source: raw
 		};
 	});
+
+	if (options.showEmpty) {
+		const have = new Set(all.map((g) => g.id));
+		for (const combo of allCombos(setNames, options.minDegree ?? 1, options.maxDegree ?? Infinity)) {
+			const id = combo.join('&');
+			if (!have.has(id)) all.push({ id, sets: combo, degree: combo.length, size: 0, items: [] });
+		}
+	}
 
 	const sizes = new Map(setNames.map((n) => [n, setSizes?.[n] ?? 0]));
 	if (!setSizes) for (const g of all) for (const n of g.sets) sizes.set(n, sizes.get(n)! + g.size);
