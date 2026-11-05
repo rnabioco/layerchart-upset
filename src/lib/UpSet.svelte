@@ -863,7 +863,6 @@
 							aria-pressed={isSel}
 							data-upset-bar=""
 							data-id={d.id}
-							data-set={d.id}
 							data-n={d.size}
 							data-tip={label}
 							onclick={() => select(d)}

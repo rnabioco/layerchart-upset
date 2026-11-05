@@ -137,6 +137,15 @@ export function intersectionId(members: string[]): string {
 	return members.map((m) => m.replace(/[\\&]/g, '\\$&')).join('&');
 }
 
+/**
+ * Id builder for a given input set order: members are joined in the order the sets were passed in, so a
+ * column keeps its id when `sortSetsBy` or `sortSetsOrder` reorders the display.
+ */
+function idBuilder(setNames: string[]): (members: string[]) => string {
+	const rank = new Map(setNames.map((n, i) => [n, i]));
+	return (members) => intersectionId([...members].sort((a, b) => rank.get(a)! - rank.get(b)!));
+}
+
 function assertUniqueSets(setNames: string[]): void {
 	const seen = new Set<string>();
 	for (const n of setNames) {
@@ -179,6 +188,7 @@ export function computeUpset<T extends Record<string, unknown>>(
 	} = options;
 
 	assertUniqueSets(setNames);
+	const idOf = idBuilder(setNames);
 	const sizes = new Map<string, number>(setNames.map((s) => [s, 0]));
 	for (const row of data) for (const s of membership(row, setNames)) sizes.set(s, sizes.get(s)! + 1);
 
@@ -197,7 +207,7 @@ export function computeUpset<T extends Record<string, unknown>>(
 		for (const row of data) {
 			const members = order.filter((s) => Boolean(row[s]));
 			if (members.length === 0) continue;
-			const id = intersectionId(members);
+			const id = idOf(members);
 			let g = wide.get(id);
 			if (!g) wide.set(id, (g = { id, sets: members, degree: members.length, size: 0, items: [] }));
 			g.size++;
@@ -273,7 +283,7 @@ export function computeUpset<T extends Record<string, unknown>>(
 	const all: Intersection<T>[] = [];
 	for (const [mask, size] of counts) {
 		const members = comboOf(mask);
-		const g: Intersection<T> = { id: intersectionId(members), sets: members, degree: members.length, size, items: [] };
+		const g: Intersection<T> = { id: idOf(members), sets: members, degree: members.length, size, items: [] };
 		maskOf.set(g, mask);
 		all.push(g);
 	}

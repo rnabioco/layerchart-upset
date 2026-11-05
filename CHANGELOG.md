@@ -15,6 +15,14 @@ adheres to [Semantic Versioning](https://semver.org/).
 - `onsethover` and per-set hover linking: hovering or focusing a set bar or row label dims the columns that do not
   contain that set, like a selected set does. Hover never changes `selectedSet`, and a selected set takes precedence.
 
+### Breaking
+
+- Intersection ids now join set names in the order the sets were passed in, not the display order, so a column keeps
+  its id when `sortSetsBy` / `sortSetsOrder` reorders the sets (`selected`, `focus` and URLs stay valid).
+  `Intersection.sets` is still in display order.
+- `exportPNG(el, scale, options)` is now `exportPNG(el, { scale, ...options })`.
+- Removed the `data-set` attribute from intersection bars; it duplicated `data-id`.
+
 ### Changed
 
 - The `svelte` peer range is now `^5.16.0` (was `^5.0.0`): the component uses array syntax in `class={[...]}`, which

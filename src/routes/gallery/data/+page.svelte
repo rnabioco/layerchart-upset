@@ -22,7 +22,7 @@
 	let exportPng = $state('');
 	const exportNow = async () => {
 		exportSvg = exportSVG(exportBox!);
-		const blob = await exportPNG(exportBox!, 2);
+		const blob = await exportPNG(exportBox!, { scale: 2 });
 		exportPng = `${blob.type}:${blob.size}`;
 	};
 </script>
