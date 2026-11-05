@@ -8,7 +8,7 @@ const browser = await chromium.launch(
 	process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : { channel: 'chrome' }
 );
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-await page.goto(`${base}/gallery`, { waitUntil: 'networkidle' });
+await page.goto(`${base}/gallery/data`, { waitUntil: 'networkidle' });
 await page.waitForSelector('section svg');
 
 const section = (title) => page.locator('section', { has: page.locator('h2', { hasText: title }) });
@@ -95,6 +95,8 @@ assert.equal(await bars.nth(1).getAttribute('aria-pressed'), 'true');
 ok('hover shows tooltip, click selects');
 
 // ---- row-based example: custom tooltip snippet + set bars ----
+await page.goto(`${base}/gallery/interaction`, { waitUntil: 'networkidle' });
+await page.waitForSelector('section svg');
 const custom = section('Custom tooltip');
 await custom.locator('[data-upset-bar]').first().hover();
 assert.match(await custom.locator('[role="tooltip"]').innerText(), /films · degree/);

@@ -8,7 +8,7 @@ const browser = await chromium.launch(
 	process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : { channel: 'chrome' }
 );
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-await page.goto(`${base}/gallery`, { waitUntil: 'networkidle' });
+await page.goto(`${base}/gallery/theming`, { waitUntil: 'networkidle' });
 await page.waitForSelector('section svg');
 
 const section = (title) => page.locator('section', { has: page.locator('h2', { hasText: title }) });
@@ -93,6 +93,8 @@ await dark.evaluate((el) => el.removeAttribute('style'));
 ok('prop_overrides_css_variable');
 
 // a per-intersection color function wins over the variable
+await page.goto(`${base}/gallery/basics`, { waitUntil: 'networkidle' });
+await page.waitForSelector('section svg');
 const byDegree = section('Color by degree');
 await byDegree.evaluate((el) => el.style.setProperty('--upset-bar', 'rgb(1, 2, 3)'));
 const degFills = await fills(byDegree.locator('[data-upset-bar]'));

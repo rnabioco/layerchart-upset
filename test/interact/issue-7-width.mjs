@@ -8,7 +8,7 @@ const browser = await chromium.launch(
 	process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : { channel: 'chrome' }
 );
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-await page.goto(`${base}/gallery`, { waitUntil: 'networkidle' });
+await page.goto(`${base}/gallery/layout`, { waitUntil: 'networkidle' });
 await page.waitForSelector('section svg');
 
 const section = (title) => page.locator('section', { has: page.locator('h2', { hasText: title }) });
@@ -64,6 +64,8 @@ const pageScroll = () =>
 
 // default_layout_is_unchanged
 {
+	await page.goto(`${base}/gallery/basics`, { waitUntil: 'networkidle' });
+	await page.waitForSelector('section svg');
 	const sec = section('Default').first();
 	const m = await sec.locator('.upset').evaluate((e) => ({
 		cols: getComputedStyle(e).gridTemplateColumns,
@@ -79,6 +81,8 @@ const pageScroll = () =>
 
 // focus_scrolls_bar_into_view
 {
+	await page.goto(`${base}/gallery/layout`, { waitUntil: 'networkidle' });
+	await page.waitForSelector('section svg');
 	const sec = section('maxWidth: scroll');
 	const wrap = scroller(sec);
 	await wrap.evaluate((e) => (e.scrollLeft = 0));
