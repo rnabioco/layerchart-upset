@@ -46,7 +46,7 @@
 			Hover or Tab to a bar. The tooltip is a snippet, and every bar is a button (Enter/Space select, arrows move,
 			Esc clears).
 		</p>
-		<code>{`{#snippet tooltip(t)} … {/snippet}  onhover={(i) => …}`}</code>
+		<code>{`{#snippet tooltip(t)}{t.text}{/snippet}`}</code>
 		<div class="chart">
 			<UpSet {data} sets={genres} minSize={15}>
 				{#snippet tooltip(t)}
@@ -64,7 +64,7 @@
 	<section>
 		<h2>Controlled selection</h2>
 		<p class="desc">The owner holds the selection; clicks only notify through onselect.</p>
-		<code>{`controlled selected={pick} onselect={(i) => …}`}</code>
+		<code>{`controlled selected={pick} onselect={(i) => (pick = i?.id ?? null)}`}</code>
 		<div class="chart">
 			<UpSet
 				intersections={counted}
@@ -81,7 +81,7 @@
 
 	<section>
 		<h2>onselect previous argument</h2>
-		<code>onselect=(selected, previous) => log</code>
+		<code>{`onselect={(selected, previous) => log(selected?.id, previous?.id)}`}</code>
 		<div class="chart">
 			<UpSet
 				{data}
@@ -98,7 +98,7 @@
 		<p class="desc">
 			Click a set bar or row label to keep only the columns that contain it; Esc or a second click clears.
 		</p>
-		<code>bind:selectedSet onsetselect=(set, previous)</code>
+		<code>{`bind:selectedSet onsetselect={(set, previous) => log(set?.name)}`}</code>
 		<div class="chart">
 			<UpSet {data} sets={genres} minSize={10} bind:selectedSet={pickedSet} />
 		</div>
@@ -108,7 +108,7 @@
 	<section>
 		<h2>Set selection (controlled)</h2>
 		<p class="desc">With <code>controlled</code> the owner decides; <code>onsetselect</code> only reports.</p>
-		<code>selectedSet={'{controlledSet}'} controlled onsetselect</code>
+		<code>{`controlled selectedSet={mine} onsetselect={(set) => (mine = set?.name ?? null)}`}</code>
 		<div class="chart">
 			<UpSet
 				{data}

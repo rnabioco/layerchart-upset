@@ -3,13 +3,32 @@
 
 	let { data } = $props();
 	const html = $derived(data.html.replace('src="upset.png"', `src="${img}"`));
+
+	async function copy(e: MouseEvent) {
+		const btn = (e.target as Element).closest<HTMLButtonElement>('button.copy');
+		const code = btn?.parentElement?.querySelector('pre');
+		if (!btn || !code) return;
+		try {
+			await navigator.clipboard.writeText(code.textContent ?? '');
+			btn.textContent = 'Copied';
+		} catch {
+			btn.textContent = 'Press Ctrl+C';
+			const range = document.createRange();
+			range.selectNodeContents(code);
+			getSelection()?.removeAllRanges();
+			getSelection()?.addRange(range);
+		}
+		setTimeout(() => (btn.textContent = 'Copy'), 1500);
+	}
 </script>
 
 <svelte:head>
 	<title>layerchart-upset</title>
 </svelte:head>
 
-<main class="docs">
+<!-- Copy buttons live inside the prerendered HTML, so one delegated handler serves them all. -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+<main class="docs" onclick={copy}>
 	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 	{@html html}
 </main>
@@ -39,9 +58,36 @@
 	.docs :global(pre) {
 		overflow-x: auto;
 		padding: 0.8rem 1rem;
-		background: var(--code-bg);
+		background: var(--code-bg) !important; /* shiki sets its own */
 		border-radius: 6px;
 		font-size: 0.85em;
+	}
+	.docs :global(.code) {
+		position: relative;
+	}
+	.docs :global(.copy) {
+		position: absolute;
+		top: 0.4rem;
+		right: 0.5rem;
+		font: inherit;
+		font-size: 0.75em;
+		padding: 0.15rem 0.5rem;
+		color: #555;
+		background: #fff;
+		border: 1px solid var(--rule);
+		border-radius: 4px;
+		cursor: pointer;
+		opacity: 0;
+		transition: opacity 0.15s;
+	}
+	.docs :global(.code:hover .copy),
+	.docs :global(.copy:focus-visible) {
+		opacity: 1;
+	}
+	@media (hover: none) {
+		.docs :global(.copy) {
+			opacity: 1;
+		}
 	}
 	.docs :global(code) {
 		background: var(--code-bg);

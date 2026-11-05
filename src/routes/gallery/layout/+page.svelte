@@ -93,7 +93,7 @@
 	<section>
 		<h2>Percent axis (unknown total)</h2>
 		<p class="desc">Precomputed counts without <code>total</code> keep showing counts.</p>
-		<code>normalize="total" intersections={'{…}'}</code>
+		<code>{`intersections={counts} normalize="total"`}</code>
 		<div class="chart" data-testid="pct-nototal">
 			<UpSet
 				sets={['A', 'B']}

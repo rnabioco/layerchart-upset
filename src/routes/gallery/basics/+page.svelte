@@ -68,7 +68,7 @@
 	<section>
 		<h2>Fixed set order</h2>
 		<p class="desc">Sets keep the order you pass in.</p>
-		<code>{`sets={['Sci-Fi', 'Romance', 'Drama', ...]} sortSetsBy="none"`}</code>
+		<code>{`sets={['Sci-Fi', 'Romance', 'Drama']} sortSetsBy="none"`}</code>
 		<div class="chart">
 			<UpSet {data} sets={customOrder} sortSetsBy="none" minSize={15} />
 		</div>
@@ -84,7 +84,7 @@
 
 	<section>
 		<h2>Per-set colors</h2>
-		<code>{`setColors={{ Drama: '#4e79a7', ... }} minSize={8}`}</code>
+		<code>{`setColors={{ Drama: '#4e79a7', Comedy: '#f28e2b' }} minSize={8}`}</code>
 		<div class="chart">
 			<UpSet {data} sets={genres} setColors={setPalette} minSize={8} />
 		</div>

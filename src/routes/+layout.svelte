@@ -39,6 +39,10 @@
 		color: #222;
 	}
 	header {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		background: #fff;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: baseline;
