@@ -37,6 +37,7 @@ ok('set_select_dims_other_columns');
 await bound.locator('[data-upset-set-bar="Drama"]').click();
 assert.equal((await value.innerText()).trim(), 'none');
 await page.mouse.move(5, 5); // the pointer left on the bar would now hover-dim
+await page.waitForTimeout(500); // opacity transition
 assert.ok((await opacities(bound)).every((b) => b.o === 1));
 ok('second_click_clears');
 
