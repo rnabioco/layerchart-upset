@@ -31,7 +31,7 @@ jobs:
         with:
           python-version: 3.x
       - run: npm ci
-      # Render the gallery route to PNGs + docs/gallery.md (uses the runner's Chrome)
+      # Render the gallery route to PNGs + docs/gallery/*.md (uses the runner's Chrome)
       - name: Render gallery
         run: |
           npx vite dev --port 5173 &

@@ -78,7 +78,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `setLabels` `emphasizedSets` `emphasisMarker` `maxLabelLength` | | row labels |
 | `showSetSizes` `minSlots` `yTicks` `formatSize` | | layout / axis |
 
-`computeUpset(data, sets, options)` is exported for use without the component. See the [Gallery](gallery.md) for every option in action.
+`computeUpset(data, sets, options)` is exported for use without the component. See the [Gallery](gallery/index.md) for every option in action.
 
 Run `npm run dev` for the demo page.
 

@@ -8,7 +8,7 @@ const browser = await chromium.launch(
 	process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : { channel: 'chrome' }
 );
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-await page.goto(`${base}/gallery`, { waitUntil: 'networkidle' });
+await page.goto(`${base}/gallery/interaction`, { waitUntil: 'networkidle' });
 await page.waitForSelector('section svg');
 
 const sec = page.locator('section', { has: page.locator('h2', { hasText: 'onselect previous argument' }) });

@@ -8,7 +8,7 @@ const browser = await chromium.launch(
 	process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : { channel: 'chrome' }
 );
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-await page.goto(`${base}/gallery`, { waitUntil: 'networkidle' });
+await page.goto(`${base}/gallery/layout`, { waitUntil: 'networkidle' });
 await page.waitForSelector('section svg');
 
 let n = 0;

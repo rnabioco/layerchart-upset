@@ -8,7 +8,7 @@ const browser = await chromium.launch(
 	process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH, args: ['--no-sandbox'] } : { channel: 'chrome' }
 );
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
-await page.goto(`${base}/gallery`, { waitUntil: 'networkidle' });
+await page.goto(`${base}/gallery/filters`, { waitUntil: 'networkidle' });
 await page.waitForSelector('section svg');
 
 let n = 0;
@@ -38,6 +38,8 @@ assert.equal(await sec.locator('[data-upset-bar]').count(), 4);
 assert.deepEqual(JSON.parse(await result.innerText()), { shown: 4, total, hidden: total - 4 });
 ok('footer_snippet_updates when limit changes');
 
+await page.goto(`${base}/gallery/data`, { waitUntil: 'networkidle' });
+await page.waitForSelector('section svg');
 const other = page.locator('section', { has: page.locator('h2', { hasText: 'Precomputed intersections' }) });
 assert.equal(await other.locator('.upset-footer').count(), 0);
 ok('nothing rendered without a footer');
