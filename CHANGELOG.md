@@ -8,6 +8,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The `svelte` peer range is now `^5.16.0` (was `^5.0.0`): the component uses array syntax in `class={[...]}`, which
+  Svelte added in 5.16.0. CI now also runs `check` and `test` against Svelte 5.16.0.
 - Keyboard: the intersection bars and the set bars now use a roving tabindex, so the plot is two Tab stops (the
   focused or selected bar of each kind, else the first) instead of one per bar. Arrow keys, Home and End move the
   Tab stop with focus.
