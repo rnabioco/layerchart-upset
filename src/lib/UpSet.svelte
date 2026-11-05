@@ -1007,9 +1007,10 @@
 								data-n={s.size}
 								onclick={() => selectSet(s.name)}
 								onkeydown={(e: KeyboardEvent) => setKeydown(e, s.name)}
-								onfocus={() => {
+								onfocus={(e: FocusEvent) => {
 									tabSet = s.name;
-									setFocus(s.name);
+									// Keyboard focus only: a bar focused by a click must not keep dimming after it is deselected.
+									if ((e.currentTarget as Element).matches(':focus-visible')) setFocus(s.name);
 								}}
 								onblur={() => setFocus(null)}
 								onpointerenter={(e: PointerEvent) => {
