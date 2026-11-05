@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-05
+
 ### Added
 
 - `summarize(result, valueOf)` and the `Summary` type: per-column quartiles, mean, Tukey whiskers and outliers of a numeric
@@ -204,7 +206,8 @@ Initial release.
   GitHub Pages.
 - CI (type check, unit tests, build + publint) and Dependabot for npm and GitHub Actions.
 
-[Unreleased]: https://github.com/rnabioco/layerchart-upset/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/rnabioco/layerchart-upset/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.2.1...v0.3.0
