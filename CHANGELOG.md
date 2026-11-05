@@ -10,6 +10,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 - `exportSVG` / `exportPNG` take `clean: true` to export the neutral state (no selection outline, no dimming); text carries
   its computed `font-family` and `font-size`. Web fonts are not embedded.
+- `onsethover` and per-set hover linking: hovering or focusing a set bar or row label dims the columns that do not
+  contain that set, like a selected set does. Hover never changes `selectedSet`, and a selected set takes precedence.
 
 ### Changed
 

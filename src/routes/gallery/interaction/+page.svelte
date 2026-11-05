@@ -14,6 +14,7 @@
 		{ id: 'e', sets: ['KO vs WT', 'aged vs young', 'treated vs control'], size: 2 }
 	];
 	let selected = $state<string | null>(null);
+	let hoverSet = $state<string | null>(null);
 	let controlledPick = $state<string | null>('c');
 	let controlledCalls = $state<(string | null)[]>([]);
 	let selectCalls = $state<string[]>([]);
@@ -35,8 +36,9 @@
 				bind:selected
 				highlightColor="#e53e3e"
 				dimOpacity={0.15}
+				onsethover={(s) => (hoverSet = s?.name ?? null)}
 			/>
-			<small>selected: {selected ?? 'none'}</small>
+			<small>selected: {selected ?? 'none'} <span data-set-hover>hovered set: {hoverSet ?? 'none'}</span></small>
 		</div>
 	</section>
 
