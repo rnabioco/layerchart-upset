@@ -51,6 +51,8 @@
 		yTicks?: number[];
 		/** Number formatter for the y axis and bar labels. */
 		formatSize?: (n: number) => string;
+		/** `total` labels the size axes and bar labels as a percentage of all items (bar lengths do not change). Needs a known total: with precomputed `intersections` pass `total`, otherwise counts are shown. */
+		normalize?: 'none' | 'total';
 		/** Width/height of one matrix cell, px. */
 		cellSize?: number;
 		/** Cap the plot's width (number = px, or any CSS length); it scrolls horizontally inside. */
@@ -207,6 +209,7 @@
 		onfilterchange,
 		keepItems,
 		showEmpty,
+		normalize = 'none',
 		...rest
 	}: Props = $props();
 
@@ -275,6 +278,18 @@
 	const hasZero = $derived(
 		result.intersections.some((i) => i.size <= 0) || (setPanel && result.sets.some((s) => s.size <= 0))
 	);
+	// normalize='total': axis ticks and bar labels read as a share of all items; bar lengths and tooltips (which
+	// already add the percentage to the count) are unchanged. Falls back to counts when the total is unknown.
+	const percent = $derived(normalize === 'total' && Number.isFinite(result.total) && result.total > 0);
+	const axisFormat = $derived(
+		percent
+			? (n: number) => {
+					const p = (100 * n) / result.total;
+					return `${p < 10 && p !== 0 ? p.toFixed(1).replace(/\.0$/, '') : Math.round(p)}%`;
+				}
+			: formatSize
+	);
+
 	const yMax = $derived(yTicks ? Math.max(topSize, ...yTicks) : topSize);
 	const yDomain = $derived<[number, number | null]>(
 		scale === 'linear' ? [0, yTicks ? yMax : null] : sizeDomain(scale, yMax)
@@ -647,7 +662,7 @@
 						placement="left"
 						label={intersectionLabel}
 						ticks={yTickList}
-						format={(v: number) => formatSize(v)}
+						format={(v: number) => axisFormat(v)}
 						grid={{ class: 'upset-grid' }}
 						rule={false}
 					/>
@@ -687,7 +702,7 @@
 						/>
 						{#if showLabels}
 							<Text
-								value={formatSize(d.size)}
+								value={axisFormat(d.size)}
 								x={x + xs.bandwidth() / 2}
 								{y}
 								dy={-4}
@@ -722,7 +737,7 @@
 						{#each setTickList as t (t)}
 							<Line x1={xs(t)} x2={xs(t)} y1={0} y2={context.height} class="upset-grid" data-upset-set-tick={t} />
 							<Text
-								value={formatSize(t)}
+								value={axisFormat(t)}
 								x={xs(t)}
 								y={context.height}
 								dy={-2}
@@ -759,7 +774,7 @@
 								onpointerleave={() => (tip = focused == null ? null : tip)}
 							/>
 							<Text
-								value={formatSize(s.size)}
+								value={axisFormat(s.size)}
 								x={x - 4}
 								y={y + ys.bandwidth() / 2}
 								textAnchor="end"

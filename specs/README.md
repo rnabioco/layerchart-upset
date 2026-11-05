@@ -91,7 +91,7 @@ review first (touches Rect loop and colour precedence).
 
 `annotation?: Snippet<[{ intersection, x, width }]>`, `annotationHeight`. Spec review first.
 
-## S11 — Percent axis
+## S11 — Percent axis  *(implemented as labels only: bar lengths and tooltips are unchanged)*
 
 `normalize?: 'none' | 'total'`. Disabled when `result.total` is not finite (precomputed without `total`).
 
