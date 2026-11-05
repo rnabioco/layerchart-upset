@@ -44,6 +44,7 @@ jobs:
           rm -rf node_modules/svelte && mkdir node_modules/svelte
           tar -xzf svelte-5.16.0.tgz -C node_modules/svelte --strip-components=1
           rm svelte-5.16.0.tgz
+          (cd node_modules/svelte && npm install --omit=dev --ignore-scripts --no-audit --no-fund --no-package-lock)
           node -p "'svelte ' + require('svelte/package.json').version"
       - run: npx svelte-check --tsconfig ./tsconfig.json
       - run: npm test
