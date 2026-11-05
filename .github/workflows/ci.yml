@@ -34,7 +34,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Keep in sync with the svelte peer range in package.json
+      # The dev toolchain (SvelteKit, vite-plugin-svelte) needs a newer svelte than the peer floor, so
+      # generate .svelte-kit with the locked svelte first, then swap in the minimum for check and test.
+      # Keep the version below in sync with the svelte peer range in package.json
+      - run: npx svelte-kit sync
       - run: npm install --no-save --legacy-peer-deps svelte@5.16.0
-      - run: npm run check
+      - run: npx svelte-check --tsconfig ./tsconfig.json
       - run: npm test
