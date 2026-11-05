@@ -3,6 +3,7 @@ import {
 	LOG_FLOOR,
 	clampSize,
 	computeUpset,
+	intersectionId,
 	membersOf,
 	queryCounts,
 	reportOf,
@@ -364,5 +365,97 @@ describe('showEmpty', () => {
 		]);
 		// an explicit minSize still wins
 		expect(computeUpset(data, sets, { showEmpty: true, minSize: 1 }).intersections.every((g) => g.size > 0)).toBe(true);
+	});
+});
+
+describe('S2 remaining: union, lazy items, scale', () => {
+	const names = ['A', 'B', 'C', 'D', 'E', 'F'];
+	let seed = 11;
+	const rnd = () => ((seed = (seed * 1664525 + 1013904223) % 2 ** 32) / 2 ** 32);
+	const rows = Array.from({ length: 3000 }, () => Object.fromEntries(names.map((n) => [n, rnd() < 0.5])));
+	const key = (r: ReturnType<typeof computeUpset>) =>
+		JSON.stringify(r.intersections.map((g) => [g.id, g.size, g.degree]));
+
+	it('dense_and_sparse_intersect_agree', () => {
+		// sorted -> dense table (many distinct masks); unsorted -> sparse enumeration
+		const dense = computeUpset(rows, names, { mode: 'intersect', minSize: 0 });
+		const sparse = computeUpset(rows, names, { mode: 'intersect', minSize: 0, sortIntersectionsBy: 'none' });
+		const byId = new Map(sparse.intersections.map((g) => [g.id, g.size]));
+		expect(dense.intersections.length).toBe(sparse.intersections.length);
+		for (const g of dense.intersections) expect(byId.get(g.id)).toBe(g.size);
+	});
+
+	it('items_are_lazy_and_only_for_kept_columns', () => {
+		const r = computeUpset(rows, names, { mode: 'union', limit: 3 });
+		for (const g of r.intersections) expect(g.items.length).toBe(g.size);
+		const all = computeUpset(rows, names, { mode: 'union', limit: 3, sortIntersectionsBy: 'none' });
+		expect(all.intersections).toHaveLength(3);
+	});
+
+	it('union_too_many_sets_throws', () => {
+		const wide = Array.from({ length: 26 }, (_, i) => `S${i}`);
+		expect(() => computeUpset([{ S0: true }], wide, { mode: 'union' })).toThrow(/at most 24/);
+	});
+
+	it('scale_15_sets_100k_rows_under_2s', () => {
+		const sets15 = Array.from({ length: 15 }, (_, i) => `S${i}`);
+		const big = Array.from({ length: 100_000 }, () => Object.fromEntries(sets15.map((n) => [n, rnd() < 0.15])));
+		for (const mode of ['distinct', 'intersect', 'union'] as const) {
+			const t = performance.now();
+			const r = computeUpset(big, sets15, { mode, limit: 50 });
+			expect(r.intersections).toHaveLength(50);
+			expect(performance.now() - t).toBeLessThan(2000);
+		}
+	});
+});
+
+describe('set identity and input validation', () => {
+	it('many_sets_over_31', () => {
+		const wide = Array.from({ length: 33 }, (_, i) => `S${i}`);
+		const rows = [{ S0: true }, { S32: true }, { S0: true, S32: true }];
+		const r = computeUpset(rows, wide, { sortSetsBy: 'none' });
+		const sizes = Object.fromEntries(r.intersections.map((g) => [g.id, g.size]));
+		expect(sizes).toEqual({ S0: 1, S32: 1, 'S0&S32': 1 });
+		expect(r.sets.find((s) => s.name === 'S32')!.size).toBe(2);
+		expect(r.intersections.every((g) => g.items.length === g.size)).toBe(true);
+	});
+
+	it('wide_sets_reject_combination_modes', () => {
+		const wide = Array.from({ length: 33 }, (_, i) => `S${i}`);
+		expect(() => computeUpset([{ S0: true }], wide, { mode: 'intersect' })).toThrow(/at most 30/);
+	});
+
+	it('thirty_sets_use_every_bit', () => {
+		const names30 = Array.from({ length: 30 }, (_, i) => `S${i}`);
+		const rows = [{ S29: true }, { S29: true, S0: true }];
+		const r = computeUpset(rows, names30, { mode: 'intersect', sortSetsBy: 'none' });
+		expect(Object.fromEntries(r.intersections.map((g) => [g.id, g.size]))).toEqual({ S29: 2, S0: 1, 'S0&S29': 1 });
+	});
+
+	it('ampersand_set_name', () => {
+		const rows = [{ A: true, B: true }, { 'A&B': true }];
+		const r = computeUpset(rows, ['A', 'B', 'A&B'], { sortSetsBy: 'none' });
+		const ids = r.intersections.map((g) => g.id).sort();
+		expect(ids).toEqual(['A&B', 'A\\&B']);
+		expect(r.intersections.every((g) => g.size === 1)).toBe(true);
+		expect(intersectionId(['A', 'B'])).toBe('A&B'); // ids of ordinary names are unchanged
+	});
+
+	it('duplicate_set_names_throw', () => {
+		expect(() => computeUpset([{ A: true }], ['A', 'A'])).toThrow(/Duplicate set name "A"/);
+		expect(() => fromIntersections(['A', 'A'], [])).toThrow(/Duplicate set name/);
+	});
+
+	it('precomputed_invalid_size_throws', () => {
+		for (const size of [NaN, -3, Infinity]) {
+			expect(() => fromIntersections(['A', 'B'], [{ sets: ['A'], size }])).toThrow(/invalid size/);
+		}
+		expect(fromIntersections(['A'], [{ sets: ['A'], size: 0 }], { minSize: 0 }).intersections[0].size).toBe(0);
+	});
+
+	it('precomputed_duplicate_ids_throw', () => {
+		expect(() =>
+			fromIntersections(['A', 'B'], [{ sets: ['A'], size: 1 }, { id: 'A', sets: ['B'], size: 2 }])
+		).toThrow(/Duplicate intersection id "A"/);
 	});
 });
