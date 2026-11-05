@@ -19,8 +19,8 @@ const ctl = section('Controlled selection');
 const bars = ctl.locator('[data-upset-bar]');
 const calls = async () => (await ctl.locator('[data-calls]').textContent()).replace('calls:', '').trim();
 const pressed = () => ctl.locator('[data-upset-bar][aria-pressed="true"]').evaluateAll((e) => e.map((x) => x.dataset.id));
-// Snapshot of everything visual about a bar: its markup, descendants included.
-const look = (i) => bars.nth(i).evaluate((e) => e.outerHTML);
+// Snapshot of everything visual about a bar: its markup, descendants included (tabindex roves with focus, so it is excluded).
+const look = (i) => bars.nth(i).evaluate((e) => e.outerHTML.replace(/ tabindex="-?\d"/, ''));
 
 assert.deepEqual(await pressed(), ['c']);
 const before = [await look(0), await look(2)];

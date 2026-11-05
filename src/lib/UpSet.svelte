@@ -601,6 +601,21 @@
 	}
 
 	// ---- keyboard ------------------------------------------------------------------------
+	// Roving tabindex: one intersection bar and one set bar are Tab stops; arrows move them.
+	let tabBar = $state<string | null>(null);
+	let tabSet = $state<string | null>(null);
+	const tabBarId = $derived(
+		result.intersections.find((i) => i.id === tabBar)?.id ??
+			result.intersections.find((i) => i.id === selected)?.id ??
+			result.intersections[0]?.id ??
+			null
+	);
+	const tabSetName = $derived(
+		result.sets.find((s) => s.name === tabSet)?.name ??
+			result.sets.find((s) => s.name === selectedSet)?.name ??
+			result.sets[0]?.name ??
+			null
+	);
 	function barKeydown(e: KeyboardEvent, i: Intersection<T>) {
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
@@ -627,6 +642,7 @@
 	}
 	function barFocus(i: Intersection<T>, e: FocusEvent) {
 		focused = i.id;
+		tabBar = i.id;
 		onhover?.(i);
 		(e.currentTarget as Element).scrollIntoView({ inline: 'nearest', block: 'nearest' });
 		tipAtElement(intersectionCtx(i), e.currentTarget as Element);
@@ -820,7 +836,7 @@
 							corners={[barRadius, barRadius, 0, 0]}
 							class="clickable upset-bar {themed(fill, isSel ? 'upset-bar-selected' : 'upset-bar-fill')}"
 							role="button"
-							tabindex={0}
+							tabindex={d.id === tabBarId ? 0 : -1}
 							aria-label={label}
 							aria-pressed={isSel}
 							data-upset-bar=""
@@ -962,13 +978,14 @@
 								stroke={selectedSet === s.name ? 'currentColor' : 'none'}
 								strokeWidth={selectedSet === s.name ? 2 : 0}
 								role="button"
-								tabindex={0}
+								tabindex={s.name === tabSetName ? 0 : -1}
 								aria-label={`${labelOf(s.name)}: ${formatSize(s.size)}`}
 								aria-pressed={selectedSet === s.name}
 								data-upset-set-bar={s.name}
 								data-n={s.size}
 								onclick={() => selectSet(s.name)}
 								onkeydown={(e: KeyboardEvent) => setKeydown(e, s.name)}
+								onfocus={() => (tabSet = s.name)}
 								onpointerenter={(e: PointerEvent) =>
 									tipAtPointer({ kind: 'set', set: s, text: `${labelOf(s.name)}: ${formatSize(s.size)}` }, e)}
 								onpointermove={(e: PointerEvent) =>
