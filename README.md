@@ -70,7 +70,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `inactiveColor` `dimOpacity` | | inactive dots; opacity of non-focused columns (1 disables dimming) |
 | `dotRadius` `connectorWidth` `barPadding` `barRadius` `fontSize` | .3 3 .3 2 12 | geometry / typography |
 | `intersectionLabel` `setLabel` | – | axis titles |
-| `showLabels` `stripes` `tooltips` | true | toggles |
+| `showLabels` `stripes` | true | toggles |
 | `selected` (bindable) | | id of the selected intersection (click / Enter / Space); Esc or the Clear button resets it |
 | `annotation` (snippet) `annotationHeight` | `24` | a row of HTML between the size bars and the matrix; the snippet renders once per column with `{ intersection, index, x, width, height }` (`x` is relative to the matrix) and dims with the column. Not included in `exportSVG`; the layout is unchanged unless you pass it |
 | `clearButton` | `true` | show a "Clear selection" button while a column or set is selected |
@@ -79,7 +79,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `scale` (bindable) `setScale` | `linear` | size scale of the bars: `linear`, `log` or `symlog` (shows 0); `setScale` overrides the set-size panel |
 | `scaleToggle` `onscalechange(next, previous)` | `false` | a button that switches linear ↔ log (symlog when a size is 0) |
 | `queries` | | `[{ id, color, filter(item) }]`: draws an overlay bar per query in every column, as tall as the number of its rows passing `filter` (painted in order, largest first; not stacked). Needs `data` and `keepItems`; the default tooltip lists the counts. `queryCounts(result, queries)` gives the same numbers without the component |
-| `stackBy` `stackColors` `stackOrder` `stackLegend` | | split each size bar by a row attribute (a key or `(item) => string`; missing values are `(none)`). Segments replace the bar fill; `stackOrder` is bottom to top (default: by overall count); `stackLegend` shows swatches. Linear scale and `data` only (otherwise ignored with a warning); wins over `queries`. `stackSegments(result, by)` gives the counts |
+| `stack` | | `{ by, colors?, order?, legend? }`: split each size bar by a row attribute (`by` is a key or `(item) => string`; missing values are `(none)`). Segments replace the bar fill; `order` is bottom to top (default: by overall count); `legend` shows swatches. Linear scale and `data` only (otherwise ignored with a warning); wins over `queries`. `stackSegments(result, by)` gives the counts |
 | `normalize` | `none` | `total` labels the size axes and bar labels as a percentage of all items; bars are unchanged. Needs a known total (pass `total` with precomputed input), otherwise counts are shown |
 | `showEmpty` | `false` | also list combinations no item has, as size-0 columns (degree filters apply; `minSize` then defaults to 0; ignored above 20 sets). Under `scale="log"` zeros get no bar; use `symlog` to draw them |
 | `keepItems` | `true` | `false` leaves each intersection's `items` empty, for large inputs where only counts matter |
@@ -91,7 +91,8 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `maxWidth` | – | number (px) or CSS length; wide plots scroll inside their own wrapper instead of overflowing the page |
 | `fit` `minCellSize` | `false` 12 | shrink `cellSize` toward `minCellSize` so the matrix fits its container; scrolls below the minimum |
 | `intersections` `setSizes` `total` | – | precomputed input (see above) |
-| `tooltip` (snippet), `describe`, `tooltips`, `onhover` | | tooltip content / events |
+| `tooltip` | true | `false` disables tooltips, `true` is the built-in one, a snippet replaces its content |
+| `describe`, `onhover` | | tooltip / `aria-label` text, hover event |
 | `setLabels` `emphasizedSets` `emphasisMarker` `maxLabelLength` | | row labels |
 | `showSetSizes` `minSlots` `yTicks` `formatSize` | | layout / axis |
 
