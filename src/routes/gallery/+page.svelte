@@ -467,6 +467,12 @@
 			<div class="chart" data-testid="pct-data">
 				<UpSet {data} sets={genres} minSize={20} normalize="total" />
 			</div>
+		</section>
+
+		<section>
+			<h2>Percent axis (unknown total)</h2>
+			<p class="desc">Precomputed counts without <code>total</code> keep showing counts.</p>
+			<code>normalize="total" intersections={'{…}'}</code>
 			<div class="chart" data-testid="pct-nototal">
 				<UpSet
 					sets={['A', 'B']}
