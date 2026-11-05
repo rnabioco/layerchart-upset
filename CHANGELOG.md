@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `annotation` snippet and `annotationHeight`: an HTML row between the size bars and the matrix, rendered once per
+  column with `{ intersection, index, x, width, height }`. Absent unless passed, so the default layout is unchanged.
+  `AnnotationContext` is exported.
+
 ### Changed
 
 - Selections are easier to reset: a "Clear selection" button appears while a column or set is selected (`clearButton`,

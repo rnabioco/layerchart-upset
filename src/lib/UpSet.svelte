@@ -13,6 +13,7 @@
 		queryCounts,
 		stackSegments,
 		reportOf,
+		type AnnotationContext,
 		type StackBy,
 		type Intersection,
 		type PrecomputedIntersection,
@@ -75,6 +76,14 @@
 		stackOrder?: string[];
 		/** Show a swatch legend above the plot. */
 		stackLegend?: boolean;
+		/**
+		 * A row of HTML between the size bars and the matrix: the snippet renders once per column, in a cell
+		 * aligned with that matrix column (`x` and `width` are relative to the matrix). Dims with the column.
+		 * Not part of `exportSVG`. Absent (and the layout unchanged) unless you pass it.
+		 */
+		annotation?: Snippet<[AnnotationContext<T>]>;
+		/** Height of the annotation row in px (default 24). */
+		annotationHeight?: number;
 		/** Show a "Clear selection" button while a column or set is selected (default true). Esc does the same from anywhere once you have clicked the plot. */
 		clearButton?: boolean;
 		/** `total` labels the size axes and bar labels as a percentage of all items (bar lengths do not change). Needs a known total: with precomputed `intersections` pass `total`, otherwise counts are shown. */
@@ -242,6 +251,8 @@
 		stackOrder,
 		stackLegend = false,
 		clearButton = true,
+		annotation,
+		annotationHeight = 24,
 		...rest
 	}: Props = $props();
 
@@ -715,7 +726,9 @@
 	style:font-size="{fontSize}px"
 	data-scale={scale}
 	style:grid-template-columns="{setPanelWidth}px {labelWidth + matrixWidth}px"
-	style:grid-template-rows="{barHeight + topPad}px {matrixHeight}px"
+	style:grid-template-rows={annotation
+		? `${barHeight + topPad}px ${annotationHeight}px ${matrixHeight}px`
+		: `${barHeight + topPad}px ${matrixHeight}px`}
 	onpointerleave={() => {
 		hovered = null;
 		if (focused == null) tip = null;
@@ -863,6 +876,31 @@
 			{/snippet}
 		</Chart>
 	</div>
+
+	{#if annotation}
+		<!-- Annotation row between the bars and the matrix: one HTML cell per column (not part of the SVG export). -->
+		<div class="upset-annotation-spacer"></div>
+		<div class="upset-annotation-row" data-upset-annotations="">
+			{#each result.intersections as d, index (d.id)}
+				<div
+					class="upset-annotation"
+					data-upset-annotation={d.id}
+					style:left="{labelWidth + index * cellSize}px"
+					style:width="{cellSize}px"
+					style:height="{annotationHeight}px"
+					style:opacity={opacity(d.id)}
+				>
+					{@render annotation({
+						intersection: d,
+						index,
+						x: index * cellSize,
+						width: cellSize,
+						height: annotationHeight
+					})}
+				</div>
+			{/each}
+		</div>
+	{/if}
 
 	<!-- Set size: horizontal bars growing to the left, aligned to matrix rows -->
 	<div class="panel">
@@ -1113,6 +1151,20 @@
 	.upset-filters button:disabled {
 		opacity: 0.4;
 		cursor: default;
+	}
+	.upset-annotation-row {
+		position: relative;
+	}
+	.upset-annotation {
+		position: absolute;
+		top: 0;
+		overflow: hidden;
+		box-sizing: border-box;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.85em;
+		color: var(--upset-text, currentColor);
 	}
 	.upset-clear {
 		position: absolute;

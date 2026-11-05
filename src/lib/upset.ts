@@ -435,6 +435,16 @@ export function queryCounts<T>(
 	return out;
 }
 
+/** What an `annotation` snippet receives for one column. `x` and `width` are px relative to the matrix. */
+export interface AnnotationContext<T> {
+	intersection: Intersection<T>;
+	/** Position of the column, left to right. */
+	index: number;
+	x: number;
+	width: number;
+	height: number;
+}
+
 /** The category of an item for `stackBy`: a key of the row or a function; missing values are `"(none)"`. */
 export type StackBy<T> = (keyof T & string) | ((item: T) => string | null | undefined);
 

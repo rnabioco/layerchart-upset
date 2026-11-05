@@ -72,6 +72,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `intersectionLabel` `setLabel` | – | axis titles |
 | `showLabels` `stripes` `tooltips` | true | toggles |
 | `selected` (bindable) | | id of the selected intersection (click / Enter / Space); Esc or the Clear button resets it |
+| `annotation` (snippet) `annotationHeight` | `24` | a row of HTML between the size bars and the matrix; the snippet renders once per column with `{ intersection, index, x, width, height }` (`x` is relative to the matrix) and dims with the column. Not included in `exportSVG`; the layout is unchanged unless you pass it |
 | `clearButton` | `true` | show a "Clear selection" button while a column or set is selected |
 | `selectedSet` (bindable) | | name of the selected set (click a set bar or row label, Enter/Space, Esc clears); columns without it are dimmed |
 | `onsetselect(set, previous)` | | called when a set is selected or cleared (`null`) |
