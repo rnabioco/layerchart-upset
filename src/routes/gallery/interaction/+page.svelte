@@ -38,7 +38,8 @@
 				dimOpacity={0.15}
 				onsethover={(s) => (hoverSet = s?.name ?? null)}
 			/>
-			<small>selected: {selected ?? 'none'} <span data-set-hover>hovered set: {hoverSet ?? 'none'}</span></small>
+			<small>selected: {selected ?? 'none'}</small>
+			<div data-set-hover>hovered set: {hoverSet ?? 'none'}</div>
 		</div>
 	</section>
 
