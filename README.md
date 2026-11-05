@@ -123,16 +123,16 @@ so it returns an empty map for precomputed input or `keepItems: false`.
 
 ## Exporting the figure
 
-`exportSVG(el)` returns a standalone SVG string of the plot and `exportPNG(el, scale = 2)` a `Promise<Blob>`. Pass
+`exportSVG(el)` returns a standalone SVG string of the plot and `exportPNG(el, { scale = 2 })` a `Promise<Blob>`. Pass
 the plot's wrapper element (`bind:this` on a parent `div` works). Computed colors and fonts are inlined, so themed
 plots render the same outside the page; the tooltip, filter bar and footer are not included. Fonts are referenced by name, not embedded. By default the output is what is on screen,
-including the selection outline and dimming; pass `{ clean: true }` (the last argument of either function) for the
+including the selection outline and dimming; pass `{ clean: true }` (the options argument of either function) for the
 neutral state.
 
 ```ts
 import { exportSVG, exportPNG } from 'layerchart-upset';
 const svg = exportSVG(wrapper);
-const png = await exportPNG(wrapper, 3);
+const png = await exportPNG(wrapper, { scale: 3 });
 const neutral = exportSVG(wrapper, { clean: true });
 ```
 

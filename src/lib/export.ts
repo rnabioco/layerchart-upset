@@ -28,6 +28,8 @@ export interface ExportOptions {
 	 * focus/pressed state, whatever is on screen when called. Default false (output is what is on screen).
 	 */
 	clean?: boolean;
+	/** `exportPNG` only: multiplies the pixel size. Default 2. */
+	scale?: number;
 }
 
 /** Marks whose opacity comes from selection/hover dimming. */
@@ -112,8 +114,9 @@ export function exportSVG(el: Element, options: ExportOptions = {}): string {
 	return new XMLSerializer().serializeToString(out);
 }
 
-/** Rasterize {@link exportSVG} to a PNG. `scale` multiplies the pixel size (default 2). */
-export async function exportPNG(el: Element, scale = 2, options: ExportOptions = {}): Promise<Blob> {
+/** Rasterize {@link exportSVG} to a PNG. `options.scale` multiplies the pixel size (default 2). */
+export async function exportPNG(el: Element, options: ExportOptions = {}): Promise<Blob> {
+	const scale = options.scale ?? 2;
 	const svg = exportSVG(el, options);
 	const m = /viewBox="0 0 (\d+) (\d+)"/.exec(svg)!;
 	const img = new Image();

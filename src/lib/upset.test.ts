@@ -219,7 +219,10 @@ describe('computeUpset modes against a brute-force reference', () => {
 						: mode === 'intersect'
 							? combo.every((s) => members.includes(s))
 							: combo.some((s) => members.includes(s));
-				if (hit) out.set(combo.join('&'), [...(out.get(combo.join('&')) ?? []), r]);
+				if (hit) {
+					const key = names.filter((n) => combo.includes(n)).join('&'); // ids use input order
+					out.set(key, [...(out.get(key) ?? []), r]);
+				}
 			}
 		});
 		return out;
@@ -525,5 +528,16 @@ describe('summarize', () => {
 		expect(f.median).toBe(k.median * 2);
 		expect(f.mean).toBe(k.mean * 2);
 		expect([...summarize(r, 'v').keys()]).toEqual(r.intersections.map((g) => g.id));
+	});
+});
+
+describe('stable ids', () => {
+	it('ids do not change when set display order changes', () => {
+		const data = [{ a: 1, b: 1 }, { a: 1, b: 1 }, { a: 1, b: 0 }, { a: 0, b: 1 }, { a: 0, b: 1 }, { a: 0, b: 1 }];
+		const ids = (o: object) => computeUpset(data, ['a', 'b'], o).intersections.map((g) => g.id).sort();
+		const base = ids({ sortSetsBy: 'none' });
+		expect(base).toEqual(['a', 'a&b', 'b']);
+		expect(ids({ sortSetsBy: 'cardinality', sortSetsOrder: 'descending' })).toEqual(base);
+		expect(ids({ sortSetsBy: 'cardinality', sortSetsOrder: 'ascending' })).toEqual(base);
 	});
 });
