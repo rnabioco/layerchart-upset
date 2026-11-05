@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { topics } from './topics.js';
 </script>
 
@@ -6,6 +7,6 @@
 
 <ul class="topics">
 	{#each topics as t (t.slug)}
-		<li><a href="/gallery/{t.slug}">{t.title}</a> — {t.blurb}</li>
+		<li><a href={resolve(`/gallery/${t.slug}`)}>{t.title}</a> — {t.blurb}</li>
 	{/each}
 </ul>

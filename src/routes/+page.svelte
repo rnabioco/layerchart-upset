@@ -1,57 +1,72 @@
 <script lang="ts">
-	import { UpSet } from '../lib/index.js';
+	import img from '../../docs/upset.png';
 
-	// Deterministic pseudo-random genre membership (movies-like toy data).
-	const genres = ['Drama', 'Comedy', 'Action', 'Thriller', 'Romance', 'Sci-Fi'];
-	const weights = [0.5, 0.4, 0.25, 0.2, 0.15, 0.1];
-	let seed = 42;
-	const rand = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
-	const data = Array.from({ length: 600 }, (_, i) => {
-		const row: Record<string, unknown> = { id: i };
-		genres.forEach((g, j) => (row[g] = rand() < weights[j]));
-		return row;
-	});
-
-	let selected = $state<string | null>(null);
-	let minSize = $state(5);
-	let mode = $state<'distinct' | 'intersect' | 'union'>('distinct');
-	let sortBy = $state<'cardinality' | 'degree'>('cardinality');
+	let { data } = $props();
+	const html = $derived(data.html.replace('src="upset.png"', `src="${img}"`));
 </script>
 
-<main>
-	<h1>UpSet with LayerChart</h1>
-	<p><a href="gallery">Gallery of optional settings →</a></p>
-	<div class="controls">
-		<label
-			>mode
-			<select bind:value={mode}>
-				<option>distinct</option><option>intersect</option><option>union</option>
-			</select>
-		</label>
-		<label
-			>sort by
-			<select bind:value={sortBy}><option>cardinality</option><option>degree</option></select>
-		</label>
-		<label
-			>min size {minSize}
-			<input type="range" min="1" max="30" bind:value={minSize} />
-		</label>
-		<span>selected: {selected ?? 'none'}</span>
-	</div>
-	<UpSet {data} sets={genres} {minSize} {mode} sortIntersectionsBy={sortBy} bind:selected />
+<svelte:head>
+	<title>layerchart-upset</title>
+</svelte:head>
+
+<main class="docs">
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html html}
 </main>
 
 <style>
-	main {
-		font-family: system-ui, sans-serif;
-		padding: 1.5rem;
-		color: #222;
+	.docs {
+		max-width: 52rem;
+		margin: 0 auto;
+		padding: 1rem 1.5rem 4rem;
+		line-height: 1.55;
 	}
-	.controls {
-		display: flex;
-		gap: 1.25rem;
-		align-items: center;
-		margin-bottom: 1rem;
-		font-size: 14px;
+	.docs :global(img) {
+		max-width: 100%;
+	}
+	.docs :global(h1),
+	.docs :global(h2) {
+		margin-top: 1.8em;
+		line-height: 1.2;
+	}
+	.docs :global(h1) {
+		margin-top: 0.5em;
+	}
+	.docs :global(h2) {
+		border-bottom: 1px solid var(--rule);
+		padding-bottom: 0.2em;
+	}
+	.docs :global(pre) {
+		overflow-x: auto;
+		padding: 0.8rem 1rem;
+		background: var(--code-bg);
+		border-radius: 6px;
+		font-size: 0.85em;
+	}
+	.docs :global(code) {
+		background: var(--code-bg);
+		padding: 0.1em 0.3em;
+		border-radius: 3px;
+		font-size: 0.9em;
+	}
+	.docs :global(pre code) {
+		background: none;
+		padding: 0;
+	}
+	.docs :global(table) {
+		border-collapse: collapse;
+		display: block;
+		overflow-x: auto;
+		font-size: 0.9em;
+	}
+	.docs :global(th),
+	.docs :global(td) {
+		border: 1px solid var(--rule);
+		padding: 0.3rem 0.6rem;
+		text-align: left;
+		vertical-align: top;
+	}
+	.docs :global(a) {
+		color: var(--link);
 	}
 </style>

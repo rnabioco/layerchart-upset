@@ -1,23 +1,18 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { topics } from './topics.js';
 
 	let { children } = $props();
+	const here = (href: string) => (page.url.pathname.replace(/\/$/, '') === href.replace(/\/$/, '') ? 'page' : undefined);
 </script>
 
 <main class="gallery">
-	<p><a href="../">← interactive demo</a></p>
 	<h1>UpSet gallery</h1>
 	<nav aria-label="Gallery topics">
-		<a href="/gallery" aria-current={page.url.pathname.replace(/\/$/, '') === '/gallery' ? 'page' : undefined}
-			>Index</a
-		>
+		<a href={resolve('/gallery')} aria-current={here(resolve('/gallery'))}>Index</a>
 		{#each topics as t (t.slug)}
-			<a
-				href="/gallery/{t.slug}"
-				aria-current={page.url.pathname.replace(/\/$/, '') === `/gallery/${t.slug}` ? 'page' : undefined}
-				>{t.title}</a
-			>
+			<a href={resolve(`/gallery/${t.slug}`)} aria-current={here(resolve(`/gallery/${t.slug}`))}>{t.title}</a>
 		{/each}
 	</nav>
 	{@render children()}

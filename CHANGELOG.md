@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- The documentation site is now the SvelteKit app itself, prerendered to static files with `adapter-static` and
+  published on GitHub Pages: docs home (rendered from `docs/index.md`), `/demo` and the live gallery at `/gallery`.
+  Zensical and the screenshot pipeline (`scripts/gallery.mjs`) are removed. The interactive demo moved from `/` to
+  `/demo`.
+
 ## [0.4.0] - 2026-11-04
 
 ### Added
