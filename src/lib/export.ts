@@ -23,17 +23,46 @@ const PROPS = [
 export interface ExportOptions {
 	/** Fill behind the plot. Default: the plot's own computed background, or white if that is transparent. */
 	background?: string;
+	/**
+	 * Export the neutral state: drop the selection outline, the dimming from selection or hover, and the
+	 * focus/pressed state, whatever is on screen when called. Default false (output is what is on screen).
+	 */
+	clean?: boolean;
 }
 
-function inline(src: Element, dst: Element) {
+/** Marks whose opacity comes from selection/hover dimming. */
+const DIMMABLE = '[data-upset-bar],[data-upset-set-bar],[data-upset-column],[data-upset-stack],[data-upset-query],[data-upset-count]';
+/** Marks that draw a selection outline when `aria-pressed="true"`. */
+const OUTLINED = '[data-upset-bar],[data-upset-set-bar]';
+
+function inline(src: Element, dst: Element, clean: boolean) {
 	const cs = getComputedStyle(src);
+	const reset = new Map<string, string>();
+	if (clean) {
+		// A fill-opacity of 0 is deliberate (invisible hit areas); only partial opacities are dimming.
+		const dimmed = (v: string) => Number(v) > 0 && Number(v) < 1;
+		if (src.closest(DIMMABLE)) {
+			if (dimmed(cs.getPropertyValue('opacity'))) reset.set('opacity', '1');
+			if (dimmed(cs.getPropertyValue('fill-opacity'))) reset.set('fill-opacity', '1');
+		}
+		if (src.matches(OUTLINED) && src.getAttribute('aria-pressed') === 'true') {
+			reset.set('stroke', 'none');
+			reset.set('stroke-width', '0');
+		}
+	}
 	let style = '';
-	for (const p of PROPS) style += `${p}:${cs.getPropertyValue(p)};`;
+	for (const p of PROPS) style += `${p}:${reset.get(p) ?? cs.getPropertyValue(p)};`;
 	dst.setAttribute('style', style);
+	// Web fonts are not embedded: the family name is kept, so a viewer without that font falls back to its
+	// own. Also set as attributes so tools that ignore `style` on text still see the metrics.
+	if (dst.localName === 'text' || dst.localName === 'tspan') {
+		dst.setAttribute('font-family', cs.getPropertyValue('font-family'));
+		dst.setAttribute('font-size', cs.getPropertyValue('font-size'));
+	}
 	for (const a of ['class', 'tabindex', 'role', 'data-tip', 'aria-pressed']) dst.removeAttribute(a);
 	const a = [...src.children];
 	const b = [...dst.children];
-	for (let i = 0; i < a.length; i++) if (b[i]) inline(a[i], b[i]);
+	for (let i = 0; i < a.length; i++) if (b[i]) inline(a[i], b[i], clean);
 }
 
 function backgroundOf(el: Element): string {
@@ -72,7 +101,7 @@ export function exportSVG(el: Element, options: ExportOptions = {}): string {
 	for (const svg of svgs) {
 		const r = svg.getBoundingClientRect();
 		const copy = svg.cloneNode(true) as SVGSVGElement;
-		inline(svg, copy);
+		inline(svg, copy, options.clean === true);
 		copy.setAttribute('x', String(r.left - box.left));
 		copy.setAttribute('y', String(r.top - box.top));
 		copy.setAttribute('width', String(r.width));

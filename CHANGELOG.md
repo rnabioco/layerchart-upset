@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `exportSVG` / `exportPNG` take `clean: true` to export the neutral state (no selection outline, no dimming); text carries
+  its computed `font-family` and `font-size`. Web fonts are not embedded.
+
 ### Changed
 
 - Keyboard: the intersection bars and the set bars now use a roving tabindex, so the plot is two Tab stops (the

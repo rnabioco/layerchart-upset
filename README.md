@@ -103,12 +103,15 @@ Run `npm run dev` for the demo page.
 
 `exportSVG(el)` returns a standalone SVG string of the plot and `exportPNG(el, scale = 2)` a `Promise<Blob>`. Pass
 the plot's wrapper element (`bind:this` on a parent `div` works). Computed colors and fonts are inlined, so themed
-plots render the same outside the page; the tooltip, filter bar and footer are not included.
+plots render the same outside the page; the tooltip, filter bar and footer are not included. Fonts are referenced by name, not embedded. By default the output is what is on screen,
+including the selection outline and dimming; pass `{ clean: true }` (the last argument of either function) for the
+neutral state.
 
 ```ts
 import { exportSVG, exportPNG } from 'layerchart-upset';
 const svg = exportSVG(wrapper);
 const png = await exportPNG(wrapper, 3);
+const neutral = exportSVG(wrapper, { clean: true });
 ```
 
 ## Controlled selection
