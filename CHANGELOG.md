@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-04
+
 ### Added
 
 - Logarithmic size scales: `scale` (`'linear'` | `'log'` | `'symlog'`, bindable), `setScale` for the set-size
@@ -121,6 +123,8 @@ Initial release.
   GitHub Pages.
 - CI (type check, unit tests, build + publint) and Dependabot for npm and GitHub Actions.
 
+[Unreleased]: https://github.com/rnabioco/layerchart-upset/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/rnabioco/layerchart-upset/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.1.0...v0.2.0
