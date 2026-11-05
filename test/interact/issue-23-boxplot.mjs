@@ -1,4 +1,4 @@
-// Browser test: one box plot per column in the annotation row, aligned with the bars (runs in CI only).
+// Browser test: one box plot per column in the annotation row, aligned with the columns (runs in CI only).
 // Usage: node test/interact/issue-23-boxplot.mjs [baseUrl]
 import { chromium } from 'playwright-core';
 import assert from 'node:assert/strict';
@@ -10,10 +10,10 @@ const browser = await chromium.launch(
 const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
 await page.goto(`${base}/gallery/layout`, { waitUntil: 'networkidle' });
 const chart = page.locator('[data-testid="boxplots"]');
-await chart.locator('[data-upset-bar]').first().waitFor();
+await chart.locator('[data-upset-column]').first().waitFor();
 
-const bars = await chart.locator('[data-upset-bar]').evaluateAll((els) =>
-	els.map((e) => ({ id: e.getAttribute('data-id'), r: e.getBoundingClientRect().toJSON() }))
+const bars = await chart.locator('[data-upset-column]').evaluateAll((els) =>
+	els.map((e) => ({ id: e.getAttribute('data-upset-column'), r: e.getBoundingClientRect().toJSON() }))
 );
 const boxes = await chart.locator('[data-upset-annotation]').evaluateAll((els) =>
 	els.map((e) => ({ id: e.getAttribute('data-upset-annotation'), n: e.querySelectorAll('svg[data-boxplot] rect').length, r: e.getBoundingClientRect().toJSON() }))
