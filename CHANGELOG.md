@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Deviation view: `sortIntersectionsBy: 'deviation'` orders columns by observed minus expected size under
+  independence, `showExpected` marks the expected size on each bar and in the tooltip, and `expectedSize()` /
+  `deviations()` are exported for custom coloring.
+
 ## [0.6.0] - 2026-11-05
 
 ### Added

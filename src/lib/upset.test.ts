@@ -4,6 +4,8 @@ import {
 	maxOf,
 	clampSize,
 	computeUpset,
+	deviations,
+	expectedSize,
 	intersectionId,
 	membersOf,
 	queryCounts,
@@ -539,5 +541,46 @@ describe('stable ids', () => {
 		expect(base).toEqual(['a', 'a&b', 'b']);
 		expect(ids({ sortSetsBy: 'cardinality', sortSetsOrder: 'descending' })).toEqual(base);
 		expect(ids({ sortSetsBy: 'cardinality', sortSetsOrder: 'ascending' })).toEqual(base);
+	});
+});
+
+describe('deviation', () => {
+	// 100 rows; a in 50, b in 50, independent: 25 in both, 25 only a, 25 only b, 25 neither.
+	const rows = (both: number, onlyA: number, onlyB: number, none: number) => [
+		...Array(both).fill({ a: 1, b: 1 }),
+		...Array(onlyA).fill({ a: 1, b: 0 }),
+		...Array(onlyB).fill({ a: 0, b: 1 }),
+		...Array(none).fill({ a: 0, b: 0 })
+	];
+
+	it('expected_size_matches_independence_model', () => {
+		const sets = [{ name: 'a', size: 50 }, { name: 'b', size: 50 }];
+		expect(expectedSize(['a', 'b'], sets, 100)).toBeCloseTo(25);
+		expect(expectedSize(['a'], sets, 100)).toBeCloseTo(25);
+		expect(expectedSize(['a', 'b'], sets, 100, 'intersect')).toBeCloseTo(25);
+		expect(expectedSize(['a', 'b'], sets, 100, 'union')).toBeCloseTo(75);
+		expect(expectedSize(['a'], sets, NaN)).toBeNaN();
+	});
+
+	it('independent_data_has_zero_deviation', () => {
+		const r = computeUpset(rows(25, 25, 25, 25), ['a', 'b']);
+		for (const { deviation } of deviations(r).values()) expect(deviation).toBeCloseTo(0);
+	});
+
+	it('sort_by_deviation_orders_most_over_represented_first', () => {
+		// a and b are each in 45 of 100 rows, so a&b is expected ~20; observing 40 makes it the most over-represented.
+		const data = rows(40, 5, 5, 50);
+		const desc = computeUpset(data, ['a', 'b'], { sortIntersectionsBy: 'deviation' });
+		const dev = deviations(desc);
+		const ds = desc.intersections.map((g) => dev.get(g.id)!.deviation);
+		expect(ds).toEqual([...ds].sort((x, y) => y - x));
+		expect(desc.intersections[0].id).toBe('a&b');
+		const asc = computeUpset(data, ['a', 'b'], { sortIntersectionsBy: 'deviation', sortIntersectionsOrder: 'ascending' });
+		expect(asc.intersections.at(-1)!.id).toBe('a&b');
+	});
+
+	it('precomputed_sort_by_deviation_without_total_does_not_throw', () => {
+		const r = fromIntersections(['a', 'b'], [{ sets: ['a'], size: 3 }, { sets: ['a', 'b'], size: 5 }], { sortIntersectionsBy: 'deviation' });
+		expect(r.intersections).toHaveLength(2);
 	});
 });
