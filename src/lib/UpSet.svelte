@@ -135,6 +135,8 @@
 		tooltip?: Snippet<[TooltipContext<T>]>;
 		/** Called when the pointer or keyboard focus enters/leaves an intersection. */
 		onhover?: (intersection: Intersection<T> | null) => void;
+		/** Called when the pointer or keyboard focus enters/leaves a set bar or row label. Hover never changes `selectedSet`. */
+		onsethover?: (set: SetInfo | null) => void;
 		/** Accessible name of the whole plot. */
 		'aria-label'?: string;
 		/** Color of inactive matrix dots. Unset: `--upset-dot-off`, then `#d4d4d8`. */
@@ -214,6 +216,7 @@
 		describe: describeProp,
 		tooltip,
 		onhover,
+		onsethover,
 		'aria-label': ariaLabel = 'UpSet plot',
 		inactiveColor,
 		showLabels = true,
@@ -386,11 +389,18 @@
 		const id = hovered ?? focused ?? selected;
 		return id != null && result.intersections.some((i) => i.id === id) ? id : null;
 	});
-	/** Ids of the columns containing the selected set; null when no set is selected. */
+	let hoveredSet = $state<string | null>(null);
+	let focusedSet = $state<string | null>(null);
+	/** The set whose membership is highlighted: the selected set, else the hovered or focused one. */
+	const activeSet = $derived.by(() => {
+		const name = selectedSet ?? hoveredSet ?? focusedSet;
+		return name != null && visibleSets.includes(name) ? name : null;
+	});
+	/** Ids of the columns containing the active set; null when there is none. */
 	const inSelectedSet = $derived(
-		selectedSet == null || !visibleSets.includes(selectedSet)
+		activeSet == null
 			? null
-			: new Set(result.intersections.filter((i) => i.sets.includes(selectedSet!)).map((i) => i.id))
+			: new Set(result.intersections.filter((i) => i.sets.includes(activeSet!)).map((i) => i.id))
 	);
 	const opacity = (id: string) =>
 		(focus && focus !== id) || (inSelectedSet && !inSelectedSet.has(id)) ? dimOpacity : 1;
@@ -601,6 +611,15 @@
 		hovered = null;
 		if (focused == null) tip = null;
 		onhover?.(null);
+	}
+
+	function setHover(name: string | null) {
+		hoveredSet = name;
+		onsethover?.(name == null ? null : (result.sets.find((x) => x.name === name) ?? null));
+	}
+	function setFocus(name: string | null) {
+		focusedSet = name;
+		if (hoveredSet == null) onsethover?.(name == null ? null : (result.sets.find((x) => x.name === name) ?? null));
 	}
 
 	// ---- keyboard ------------------------------------------------------------------------
@@ -988,12 +1007,22 @@
 								data-n={s.size}
 								onclick={() => selectSet(s.name)}
 								onkeydown={(e: KeyboardEvent) => setKeydown(e, s.name)}
-								onfocus={() => (tabSet = s.name)}
-								onpointerenter={(e: PointerEvent) =>
-									tipAtPointer({ kind: 'set', set: s, text: `${labelOf(s.name)}: ${formatSize(s.size)}` }, e)}
+								onfocus={(e: FocusEvent) => {
+									tabSet = s.name;
+									// Keyboard focus only: a bar focused by a click must not keep dimming after it is deselected.
+									if ((e.currentTarget as Element).matches(':focus-visible')) setFocus(s.name);
+								}}
+								onblur={() => setFocus(null)}
+								onpointerenter={(e: PointerEvent) => {
+									setHover(s.name);
+									tipAtPointer({ kind: 'set', set: s, text: `${labelOf(s.name)}: ${formatSize(s.size)}` }, e);
+								}}
 								onpointermove={(e: PointerEvent) =>
 									tipAtPointer({ kind: 'set', set: s, text: `${labelOf(s.name)}: ${formatSize(s.size)}` }, e)}
-								onpointerleave={() => (tip = focused == null ? null : tip)}
+								onpointerleave={() => {
+									setHover(null);
+									tip = focused == null ? null : tip;
+								}}
 							/>
 							<Text
 								value={axisFormat(s.size)}
@@ -1049,6 +1078,8 @@
 							style={emphasizedSets.includes(name) || selectedSet === name ? 'font-weight: 700' : undefined}
 							data-upset-row={name}
 							onclick={() => selectSet(name)}
+							onpointerenter={() => setHover(name)}
+							onpointerleave={() => setHover(null)}
 						/>
 					{/each}
 
