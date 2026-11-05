@@ -11,7 +11,9 @@
 		sizeScale,
 		sizeTicks,
 		queryCounts,
+		stackSegments,
 		reportOf,
+		type StackBy,
 		type Intersection,
 		type PrecomputedIntersection,
 		type SetInfo,
@@ -60,6 +62,19 @@
 		 * with a console warning). Overlays ignore the pointer, and the default tooltip lists the counts.
 		 */
 		queries?: UpSetQuery<T>[];
+		/**
+		 * Split each size bar into one segment per category of the column's rows: a key of the row or a function
+		 * (missing values are `"(none)"`). Segment colors replace the bar fill; `color` still colors the matrix.
+		 * Linear scale only (log scales draw the totals) and needs `data` and `keepItems !== false`; otherwise
+		 * ignored with a console warning. Wins over `queries`.
+		 */
+		stackBy?: StackBy<T>;
+		/** Segment colors by category (default: a built-in palette in stack order). */
+		stackColors?: Record<string, string>;
+		/** Categories bottom to top; the rest follow by overall count, descending. */
+		stackOrder?: string[];
+		/** Show a swatch legend above the plot. */
+		stackLegend?: boolean;
 		/** `total` labels the size axes and bar labels as a percentage of all items (bar lengths do not change). Needs a known total: with precomputed `intersections` pass `total`, otherwise counts are shown. */
 		normalize?: 'none' | 'total';
 		/** Width/height of one matrix cell, px. */
@@ -220,6 +235,10 @@
 		showEmpty,
 		normalize = 'none',
 		queries,
+		stackBy,
+		stackColors,
+		stackOrder,
+		stackLegend = false,
 		...rest
 	}: Props = $props();
 
@@ -376,22 +395,34 @@
 	};
 
 	// Queries need the rows: with precomputed input or keepItems=false they are ignored (warned once).
-	const queriesUsable = $derived(!intersections && keepItems !== false);
-	const activeQueries = $derived(queriesUsable ? (queries ?? []) : []);
+	const rowsUsable = $derived(!intersections && keepItems !== false);
+	// stackBy: needs the rows and a linear scale; it wins over queries.
+	const stacking = $derived(stackBy != null && rowsUsable && scale === 'linear');
+	const activeQueries = $derived(rowsUsable && !stacking && !stackBy ? (queries ?? []) : []);
 	const counts = $derived(queryCounts(result, activeQueries));
-	let warnedQueries = false;
+	const stack = $derived(stacking ? stackSegments(result, stackBy!, stackOrder) : null);
+	const PALETTE = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
+	const stackColor = (c: string) => stackColors?.[c] ?? PALETTE[(stack?.order.indexOf(c) ?? 0) % PALETTE.length];
+	const warned = new Set<string>();
+	function warnOnce(key: string, msg: string) {
+		if (warned.has(key)) return;
+		warned.add(key);
+		console.warn(`UpSet: ${msg}`);
+	}
 	$effect(() => {
-		if (queries?.length && !queriesUsable && !warnedQueries) {
-			warnedQueries = true;
-			console.warn('UpSet: `queries` need `data` and keepItems !== false; ignoring them.');
-		}
+		if (queries?.length && !rowsUsable) warnOnce('queries', '`queries` need `data` and keepItems !== false; ignoring them.');
+		if (stackBy != null && !rowsUsable) warnOnce('stack-rows', '`stackBy` needs `data` and keepItems !== false; ignoring it.');
+		if (stackBy != null && rowsUsable && scale !== 'linear')
+			warnOnce('stack-scale', '`stackBy` needs the linear scale; drawing totals.');
+		if (stackBy != null && queries?.length) warnOnce('stack-queries', '`stackBy` and `queries` together: ignoring `queries`.');
 	});
 
 	const describe = (i: Intersection<T>) => {
 		if (describeProp) return describeProp(i);
 		const pct = Number.isFinite(result.total) && result.total > 0 ? ` (${((100 * i.size) / result.total).toFixed(1)}%)` : '';
 		const q = activeQueries.map((query, k) => ` · ${query.id}: ${formatSize(counts.get(i.id)?.[k] ?? 0)}`).join('');
-		return `${i.sets.map(labelOf).join(' ∩ ')}: ${formatSize(i.size)}${pct}${q}`;
+		const s = (stack?.segments.get(i.id) ?? []).map((g) => ` · ${g.category}: ${formatSize(g.n)}`).join('');
+		return `${i.sets.map(labelOf).join(' ∩ ')}: ${formatSize(i.size)}${pct}${q}${s}`;
 	};
 
 	function select(i: Intersection<T>) {
@@ -550,6 +581,16 @@
 	}
 </script>
 
+{#if stackLegend && stack}
+	<ul class="upset-legend" aria-label="Stack categories" data-upset-legend="">
+		{#each stack.order as c (c)}
+			<li data-upset-legend-item={c}>
+				<span class="upset-swatch" style:background={stackColor(c)}></span>{c}
+			</li>
+		{/each}
+	</ul>
+{/if}
+
 {#if filterControls}
 	<div class="upset-filters" role="group" aria-label="Filters" data-upset-filters="">
 		<label>
@@ -701,7 +742,7 @@
 							width={xs.bandwidth()}
 							height={Math.max(0, context.height - y)}
 							{fill}
-							fillOpacity={opacity(d.id)}
+							fillOpacity={stack ? 0 : opacity(d.id)}
 							stroke={isSel ? 'currentColor' : 'none'}
 							strokeWidth={isSel ? 2 : 0}
 							corners={[barRadius, barRadius, 0, 0]}
@@ -723,6 +764,27 @@
 							onpointermove={(e: PointerEvent) => tipAtPointer(intersectionCtx(d), e)}
 							onpointerleave={leave}
 						/>
+						{#if stack}
+							{@const segs = stack.segments.get(d.id) ?? []}
+							{#each segs as seg, k (seg.category)}
+								{@const below = segs.slice(0, k).reduce((s, g) => s + g.n, 0)}
+								{@const top = ys(below + seg.n)}
+								<Rect
+									{x}
+									y={top}
+									width={xs.bandwidth()}
+									height={Math.max(0, ys(below) - top)}
+									fill={stackColor(seg.category)}
+									fillOpacity={opacity(d.id)}
+									corners={k === segs.length - 1 ? [barRadius, barRadius, 0, 0] : 0}
+									class="upset-stack"
+									style="pointer-events: none"
+									data-upset-stack={seg.category}
+									data-id={d.id}
+									data-n={seg.n}
+								/>
+							{/each}
+						{/if}
 						{#each activeQueries as q, k (q.id)}
 							{@const n = counts.get(d.id)?.[k] ?? 0}
 							{#if n > 0}
@@ -954,6 +1016,26 @@
 		align-self: end;
 		padding-left: 4px;
 		opacity: 0.7;
+	}
+	.upset-legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px 14px;
+		margin: 0 0 8px;
+		padding: 0 0 0 2px;
+		list-style: none;
+		font-size: 0.9em;
+		color: var(--upset-text, currentColor);
+	}
+	.upset-legend li {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+	}
+	.upset-swatch {
+		width: 0.9em;
+		height: 0.9em;
+		border-radius: 2px;
 	}
 	.upset-filters {
 		display: flex;

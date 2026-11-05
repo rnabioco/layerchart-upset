@@ -435,6 +435,53 @@ export function queryCounts<T>(
 	return out;
 }
 
+/** The category of an item for `stackBy`: a key of the row or a function; missing values are `"(none)"`. */
+export type StackBy<T> = (keyof T & string) | ((item: T) => string | null | undefined);
+
+export const STACK_NONE = '(none)';
+
+export interface StackResult {
+	/** Categories bottom to top: `order` first, then the rest by overall count, descending, ties alphabetical. */
+	order: string[];
+	/** For each intersection id, the non-empty categories in `order`, each with its count. */
+	segments: Map<string, { category: string; n: number }[]>;
+}
+
+/** Split each intersection's `items` by category. Needs the rows (nothing is counted without them). */
+export function stackSegments<T>(
+	result: Pick<UpSetResult<T>, 'intersections'>,
+	by: StackBy<T>,
+	order: string[] = []
+): StackResult {
+	const of = (item: T): string => {
+		const v = typeof by === 'function' ? by(item) : (item as Record<string, unknown>)[by];
+		return v == null || v === '' ? STACK_NONE : String(v);
+	};
+	const per = new Map<string, Map<string, number>>();
+	const overall = new Map<string, number>();
+	for (const g of result.intersections) {
+		const m = new Map<string, number>();
+		for (const item of g.items) {
+			const c = of(item);
+			m.set(c, (m.get(c) ?? 0) + 1);
+			overall.set(c, (overall.get(c) ?? 0) + 1);
+		}
+		per.set(g.id, m);
+	}
+	const rest = [...overall.keys()]
+		.filter((c) => !order.includes(c))
+		.sort((a, b) => overall.get(b)! - overall.get(a)! || a.localeCompare(b));
+	const full = [...order, ...rest];
+	const segments = new Map<string, { category: string; n: number }[]>();
+	for (const [id, m] of per) {
+		segments.set(
+			id,
+			full.filter((c) => m.has(c)).map((category) => ({ category, n: m.get(category)! }))
+		);
+	}
+	return { order: full, segments };
+}
+
 export interface CsvOptions<T> {
 	/** Adds an `items` column: this text for each row of the intersection, joined with `;`. */
 	items?: (item: T) => string;

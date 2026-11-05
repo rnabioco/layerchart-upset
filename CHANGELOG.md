@@ -8,6 +8,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `stackBy` (with `stackColors`, `stackOrder`, `stackLegend`): split each size bar into segments by a row attribute.
+  Linear scale and `data` only; `stackSegments()` and the `StackBy` type are exported.
+
 - `queries`: highlight subsets inside every column. Each `{ id, color, filter }` draws an overlay bar as tall as the
   number of the column's rows that pass `filter`; the default tooltip lists the counts. Works on every scale and is
   ignored (with a warning) for precomputed input or `keepItems: false`. `queryCounts()` and the `UpSetQuery` type are

@@ -81,4 +81,16 @@
 			/>
 		</div>
 	</section>
+
+	<section>
+		<h2>Stacked bars</h2>
+		<p class="desc">
+			<code>stackBy</code> splits each bar by a row attribute. Linear scale only; <code>stackLegend</code> adds the
+			swatches.
+		</p>
+		<code>{`stackBy="era" stackLegend stackColors={{ '1990s': '#4e79a7' }}`}</code>
+		<div class="chart" data-testid="stacked">
+			<UpSet {data} sets={genres} minSize={15} stackBy="era" stackLegend />
+		</div>
+	</section>
 </div>

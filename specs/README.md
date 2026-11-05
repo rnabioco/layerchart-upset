@@ -95,7 +95,7 @@ Tests: `show_empty_adds_missing_combinations`, `show_empty_respects_degree_filte
 `exportSVG(el): string` composes the three panel SVGs and inlines computed fills (CSS custom properties are lost on
 clone); `exportPNG(el, scale): Promise<Blob>`. Tests: `export_svg_has_all_bars`, `export_inlines_colors`.
 
-## S9 — Stacked bars by attribute
+## S9 — Stacked bars by attribute  *(implemented)*
 
 *Reviewed.* `stackBy?: keyof T | ((item: T) => string)`, `stackColors?: Record<string, string>`,
 `stackOrder?: string[]`, `stackLegend?: boolean`.
