@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `publish.yml`: stages the package on npm (`npm stage publish`, trusted publishing) when a GitHub release is
+  published; approve it with `npm stage approve`.
+
 ## [0.4.0] - 2026-11-04
 
 ### Added
