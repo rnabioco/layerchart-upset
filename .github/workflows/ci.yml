@@ -24,27 +24,20 @@ jobs:
           npx wait-on -t 60000 http://localhost:5173/gallery
           npm run test:interact -- http://localhost:5173
 
+  # The dev toolchain (SvelteKit 3, vite-plugin-svelte 7) needs a far newer Svelte than the peer floor, so
+  # `npm run check` and `npm test` cannot run against the minimum. Instead compile every component with the
+  # minimum Svelte compiler in an isolated install. Keep the version in sync with the svelte peer range.
   min-svelte:
-    name: check (minimum svelte)
+    name: compile (minimum svelte)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      # The dev toolchain (SvelteKit, vite-plugin-svelte) needs a newer svelte than the peer floor, so
-      # generate .svelte-kit with the locked svelte first, then swap in the minimum for check and test.
-      # Keep the version below in sync with the svelte peer range in package.json
-      - run: npx svelte-kit sync
-      - name: Swap in svelte 5.16.0
+      - name: Compile components with svelte 5.16.0
         run: |
-          npm pack svelte@5.16.0 --silent
-          rm -rf node_modules/svelte && mkdir node_modules/svelte
-          tar -xzf svelte-5.16.0.tgz -C node_modules/svelte --strip-components=1
-          rm svelte-5.16.0.tgz
-          (cd node_modules/svelte && npm install --omit=dev --ignore-scripts --no-audit --no-fund --no-package-lock)
-          node -p "'svelte ' + require('svelte/package.json').version"
-      - run: npx svelte-check --tsconfig ./tsconfig.json
-      - run: npm test
+          mkdir "$RUNNER_TEMP/min-svelte"
+          cp scripts/compile-components.mjs "$RUNNER_TEMP/min-svelte/"
+          npm install --prefix "$RUNNER_TEMP/min-svelte" --no-audit --no-fund svelte@5.16.0
+          node "$RUNNER_TEMP/min-svelte/compile-components.mjs" src/lib
