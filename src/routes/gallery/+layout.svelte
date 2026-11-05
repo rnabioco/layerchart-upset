@@ -71,6 +71,17 @@
 		margin: 0.5rem 0;
 		white-space: pre-wrap;
 	}
+	/* Readouts the browser tests read (component state as text). In the DOM, not on screen: display:none would
+	   empty innerText. */
+	.gallery :global(.probe) {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
 	.gallery :global(.chart) {
 		padding-top: 0.5rem;
 	}

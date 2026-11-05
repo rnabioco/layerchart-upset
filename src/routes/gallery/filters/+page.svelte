@@ -46,7 +46,7 @@
 			</UpSet>
 		</div>
 		<CodeBlock html={examples.code["Hidden count (limit + footer)"]} />
-		<p class="desc" data-testid="hidden-result">{lastReport}</p>
+		<p class="probe" aria-hidden="true" data-testid="hidden-result">{lastReport}</p>
 	</section>
 
 	<section>
@@ -66,7 +66,7 @@
 			/>
 		</div>
 		<CodeBlock html={examples.code["Filter controls (bound)"]} />
-		<p class="desc" data-testid="filter-bound">
+		<p class="probe" aria-hidden="true" data-testid="filter-bound">
 			{JSON.stringify({ minSize: fMin ?? null, limit: fLimit ?? null, hiddenSets: fHidden })}
 		</p>
 	</section>
@@ -85,6 +85,6 @@
 			/>
 		</div>
 		<CodeBlock html={examples.code["Filter controls (controlled)"]} />
-		<p class="desc" data-testid="filter-ctrl-calls">{filterCalls.join(',')}</p>
+		<p class="probe" aria-hidden="true" data-testid="filter-ctrl-calls">{filterCalls.join(',')}</p>
 	</section>
 </div>

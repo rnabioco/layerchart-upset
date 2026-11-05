@@ -39,7 +39,7 @@
 			/>
 		</div>
 		<CodeBlock html={examples.code["Size scale (bound)"]} />
-		<p class="desc" data-testid="scale-bound">{boundScale}</p>
+		<p class="probe" aria-hidden="true" data-testid="scale-bound">{boundScale}</p>
 	</section>
 
 	<section>
@@ -57,8 +57,8 @@
 			/>
 		</div>
 		<CodeBlock html={examples.code["Size scale (controlled)"]} />
-		<p class="desc" data-testid="scale-ctrl-calls">{scaleCalls.join(',')}</p>
-		<p class="desc" data-testid="scale-ctrl-value">{controlledScale}</p>
+		<p class="probe" aria-hidden="true" data-testid="scale-ctrl-calls">{scaleCalls.join(',')}</p>
+		<p class="probe" aria-hidden="true" data-testid="scale-ctrl-value">{controlledScale}</p>
 	</section>
 
 	<section>
