@@ -6,6 +6,7 @@ import {
 	membersOf,
 	queryCounts,
 	reportOf,
+	stackSegments,
 	toCSV,
 	sizeDomain,
 	sizeScale,
@@ -302,6 +303,37 @@ describe('queryCounts', () => {
 		const result = computeUpset(rows, sets, { keepItems: false });
 		const counts = queryCounts(result, [{ id: 'all', color: 'red', filter: () => true }]);
 		expect([...counts.values()].every((c) => c[0] === 0)).toBe(true);
+	});
+});
+
+describe('stackSegments', () => {
+	const rows = data.map((r, i) => ({ ...r, kind: i % 3 === 0 ? 'x' : i % 3 === 1 ? 'y' : null }));
+	it('stack_segments_sum_to_size', () => {
+		const result = computeUpset(rows, sets);
+		const { segments } = stackSegments(result, 'kind');
+		for (const g of result.intersections) {
+			expect(segments.get(g.id)!.reduce((s, c) => s + c.n, 0)).toBe(g.size);
+		}
+	});
+
+	it('stack_order_default_by_count', () => {
+		const result = computeUpset(rows, sets);
+		const { order } = stackSegments(result, 'kind');
+		expect(new Set(order)).toEqual(new Set(['x', 'y', '(none)']));
+		const counts = new Map(order.map((c) => [c, 0]));
+		for (const g of result.intersections) for (const it of g.items) counts.set(it.kind ?? '(none)', counts.get(it.kind ?? '(none)')! + 1);
+		for (let i = 1; i < order.length; i++) expect(counts.get(order[i - 1])!).toBeGreaterThanOrEqual(counts.get(order[i])!);
+		// explicit order wins, unknown categories follow
+		expect(stackSegments(result, 'kind', ['y']).order[0]).toBe('y');
+		// a function works too
+		expect(stackSegments(result, (r) => (r.A ? 'a' : 'not a')).order.sort()).toEqual(['a', 'not a']);
+	});
+
+	it('stack_needs_items', () => {
+		const result = computeUpset(rows, sets, { keepItems: false });
+		const { order, segments } = stackSegments(result, 'kind');
+		expect(order).toEqual([]);
+		expect([...segments.values()].every((s) => s.length === 0)).toBe(true);
 	});
 });
 
