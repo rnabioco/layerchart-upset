@@ -122,6 +122,15 @@ so it returns an empty map for precomputed input or `keepItems: false`.
 </UpSet>
 ```
 
+## Deviation from independence
+
+Big columns are often big only because their sets are. `sortIntersectionsBy: 'deviation'` orders columns by observed
+minus expected size, where expected assumes membership in each set is independent (`total · Π p(member) · Π (1 − p(other))`
+for the default `distinct` mode). `descending` lists the over-represented combinations first, `ascending` the depleted
+ones. Add `showExpected` to draw the expected size as a dashed tick on each bar and in the tooltip. It needs a known total:
+always for `data`, and `total` for precomputed `intersections`. For your own coloring use `expectedSize(members, sets, total, mode)`
+or `deviations(result, mode)`, which returns `{ expected, deviation }` per intersection id.
+
 ## Exporting the figure
 
 `exportSVG(el)` returns a standalone SVG string of the plot and `exportPNG(el, { scale = 2 })` a `Promise<Blob>`. Pass

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { UpSet } from '../../../lib/index.js';
+	import { genres, makeData } from '../../demo-data.js';
 	import CodeBlock from '../CodeBlock.svelte';
 
 	let { data: examples } = $props();
@@ -14,6 +15,7 @@
 		{ id: 'z', sets: ['CTCF', 'H3K27ac'], size: 0 }
 	];
 	const decadeSets = { H3K4me3: 1010, H3K27ac: 110, CTCF: 1 };
+	const films = makeData();
 	let boundScale = $state<'linear' | 'log' | 'symlog'>('linear');
 	let controlledScale = $state<'linear' | 'log' | 'symlog'>('linear');
 	let scaleCalls = $state<string[]>([]);
@@ -74,5 +76,17 @@
 			/>
 		</div>
 		<CodeBlock html={examples.code["Size scale (set panel override)"]} />
+	</section>
+
+	<section>
+		<h2>Deviation from independence</h2>
+		<p class="desc">
+			<code>sortIntersectionsBy="deviation"</code> puts the combinations that occur more often than chance first;
+			<code>showExpected</code> draws the expected size as a dashed tick on each bar and adds it to the tooltip.
+		</p>
+		<div class="chart">
+			<UpSet data={films} sets={genres} sortIntersectionsBy="deviation" showExpected limit={12} />
+		</div>
+		<CodeBlock html={examples.code["Deviation from independence"]} />
 	</section>
 </div>

@@ -6,6 +6,7 @@
 	import {
 		clampSize,
 		computeUpset,
+		deviations,
 		fromIntersections,
 		sizeDomain,
 		sizeScale,
@@ -123,6 +124,12 @@
 		setLabel?: string;
 		/** Text for an intersection: the tooltip, `aria-label` and `data-tip` of its bar. */
 		describe?: (intersection: Intersection<T>) => string;
+		/**
+		 * Mark each column's expected size under independence (see `expectedSize`) with a tick across its bar, and
+		 * add "expected N, ±D" to the default tooltip. Pair it with `sortIntersectionsBy: 'deviation'`. Needs a
+		 * known total (always for `data`; pass `total` with precomputed `intersections`).
+		 */
+		showExpected?: boolean;
 		/** Hover/focus tooltips on intersection columns and set bars: `false` disables them, `true` is the built-in one, a snippet replaces its content. */
 		tooltip?: boolean | Snippet<[TooltipContext<T>]>;
 		/** Called when the pointer or keyboard focus enters/leaves an intersection. */
@@ -211,6 +218,7 @@
 		'aria-label': ariaLabel = 'UpSet plot',
 		inactiveColor,
 		showLabels = true,
+		showExpected = false,
 		stripes = true,
 		onselect,
 		selected = $bindable(null),
@@ -437,17 +445,25 @@
 		if (stackProp != null && queries?.length) warnOnce('stack-queries', '`stack` and `queries` together: ignoring `queries`.');
 	});
 
+	// Expected size under independence, per column (only when `showExpected`).
+	const expectedMap = $derived(showExpected ? deviations(result, intersections ? 'distinct' : (mode ?? 'distinct')) : null);
+
 	const describeNow = (i: Intersection<T>) => {
 		if (describeProp) return describeProp(i);
 		const pct = Number.isFinite(result.total) && result.total > 0 ? ` (${((100 * i.size) / result.total).toFixed(1)}%)` : '';
 		const q = activeQueries.map((query, k) => ` · ${query.id}: ${formatSize(counts.get(i.id)?.[k] ?? 0)}`).join('');
 		const s = (stackData?.segments.get(i.id) ?? []).map((g) => ` · ${g.category}: ${formatSize(g.n)}`).join('');
-		return `${i.sets.map(labelOf).join(' ∩ ')}: ${formatSize(i.size)}${pct}${q}${s}`;
+		const e = expectedMap?.get(i.id);
+		const dev =
+			e && Number.isFinite(e.expected)
+				? ` · expected ${formatSize(Math.round(e.expected))} (${e.deviation >= 0 ? '+' : '−'}${formatSize(Math.round(Math.abs(e.deviation)))})`
+				: '';
+		return `${i.sets.map(labelOf).join(' ∩ ')}: ${formatSize(i.size)}${pct}${q}${s}${dev}`;
 	};
 	// One text per column, kept until something it depends on changes, so a pointer move over a bar
 	// does not call `describe` (or a user's `describeProp`) again.
 	const describeCache = $derived.by(() => {
-		void [describeProp, result, activeQueries, counts, stackData, setLabels, formatSize];
+		void [describeProp, result, activeQueries, counts, stackData, setLabels, formatSize, expectedMap];
 		return new Map<string, string>();
 	});
 	const describe = (i: Intersection<T>) => {
@@ -881,6 +897,23 @@
 									data-n={seg.n}
 								/>
 							{/each}
+						{/if}
+						{#if expectedMap}
+							{@const ex = expectedMap.get(d.id)?.expected}
+							{#if ex !== undefined && Number.isFinite(ex)}
+								{@const ey = ys(clampSize(scale, ex))}
+								<Line
+									x1={x}
+									x2={x + xs.bandwidth()}
+									y1={ey}
+									y2={ey}
+									stroke="currentColor"
+									strokeWidth={2}
+									style="pointer-events: none; stroke-dasharray: 3 2"
+									data-upset-expected={ex}
+									data-id={d.id}
+								/>
+							{/if}
 						{/if}
 						{#each activeQueries as q, k (q.id)}
 							{@const n = counts.get(d.id)?.[k] ?? 0}

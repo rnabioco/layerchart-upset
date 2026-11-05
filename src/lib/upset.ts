@@ -25,8 +25,12 @@ export interface UpSetOptions {
 	 * `sets` orders by set rank (the row order of the matrix): intersections containing the earliest sets
 	 * come first, a prefix before its extensions (A, A&B, A&C, B, B&C). `descending` (default) is that order;
 	 * `ascending` reverses it.
+	 *
+	 * `deviation` orders by observed minus expected size (see {@link expectedSize}): `descending` puts the
+	 * most over-represented combinations first, `ascending` the most depleted. Needs a known total; without
+	 * one every deviation is 0 and the order falls back to size.
 	 */
-	sortIntersectionsBy?: 'cardinality' | 'degree' | 'sets' | 'none';
+	sortIntersectionsBy?: 'cardinality' | 'degree' | 'sets' | 'deviation' | 'none';
 	sortIntersectionsOrder?: 'descending' | 'ascending';
 	sortSetsBy?: 'cardinality' | 'none';
 	sortSetsOrder?: 'descending' | 'ascending';
@@ -97,6 +101,48 @@ export interface SetInfo {
 export type TooltipContext<T> =
 	| { kind: 'intersection'; intersection: Intersection<T>; text: string }
 	| { kind: 'set'; set: SetInfo; text: string };
+
+/**
+ * Size an intersection would have if membership in each set were independent (the null model behind UpSet's
+ * "deviation" view). With `p = size / total` per set:
+ * - `distinct`: `total · Π p(member) · Π (1 − p(non-member))` over all `sets`
+ * - `intersect`: `total · Π p(member)`
+ * - `union`: `total · (1 − Π (1 − p(member)))`
+ * NaN when `total` is unknown or not positive.
+ */
+export function expectedSize(
+	members: string[],
+	sets: SetInfo[],
+	total: number,
+	mode: UpSetMode = 'distinct'
+): number {
+	if (!(total > 0)) return NaN;
+	const inside = new Set(members);
+	let prod = 1;
+	if (mode === 'union') {
+		for (const s of sets) if (inside.has(s.name)) prod *= 1 - s.size / total;
+		return total * (1 - prod);
+	}
+	for (const s of sets) {
+		const p = s.size / total;
+		if (inside.has(s.name)) prod *= p;
+		else if (mode === 'distinct') prod *= 1 - p;
+	}
+	return total * prod;
+}
+
+/** Observed and expected size of every intersection in `result`, keyed by id. `deviation = size − expected`. */
+export function deviations<T>(
+	result: Pick<UpSetResult<T>, 'sets' | 'intersections' | 'total'>,
+	mode: UpSetMode = 'distinct'
+): Map<string, { expected: number; deviation: number }> {
+	const out = new Map<string, { expected: number; deviation: number }>();
+	for (const g of result.intersections) {
+		const expected = expectedSize(g.sets, result.sets, result.total, mode);
+		out.set(g.id, { expected, deviation: g.size - expected });
+	}
+	return out;
+}
 
 export interface UpSetResult<T> {
 	sets: SetInfo[];
@@ -216,7 +262,8 @@ export function computeUpset<T extends Record<string, unknown>>(
 		const r = rankAndFilter(
 			[...wide.values()],
 			{ sortIntersectionsBy, sortIntersectionsOrder, minSize, maxSize, minDegree, maxDegree, limit },
-			order
+			order,
+			(g) => expectedSize(g.sets, sets, data.length)
 		);
 		return { sets, intersections: r.intersections, total: data.length, totalIntersections: r.totalIntersections };
 	}
@@ -299,7 +346,8 @@ export function computeUpset<T extends Record<string, unknown>>(
 			maxDegree,
 			limit
 		},
-		order
+		order,
+		sortIntersectionsBy === 'deviation' ? (g) => expectedSize(g.sets, sets, data.length, mode) : undefined
 	);
 
 	if (keepItems) attachItems(intersections, maskOf, rowMasks, data, mode);
@@ -386,7 +434,9 @@ function rankAndFilter<T>(
 	all: Intersection<T>[],
 	o: RankOptions,
 	/** Display order of the sets, for `sortIntersectionsBy: 'sets'`. */
-	order: string[] = []
+	order: string[] = [],
+	/** Expected size of an intersection, for `sortIntersectionsBy: 'deviation'`. */
+	expectedOf?: (g: Intersection<T>) => number
 ): { intersections: Intersection<T>[]; totalIntersections: number } {
 	const {
 		sortIntersectionsBy = 'cardinality',
@@ -410,6 +460,13 @@ function rankAndFilter<T>(
 		if (sortIntersectionsBy === 'sets') {
 			for (const g of out) keys.set(g, g.sets.map((s) => rk.get(s) ?? 0).sort((x, y) => x - y));
 		}
+		const dev = new Map<Intersection<T>, number>();
+		if (sortIntersectionsBy === 'deviation') {
+			for (const g of out) {
+				const d = g.size - (expectedOf?.(g) ?? NaN);
+				dev.set(g, Number.isFinite(d) ? d : 0);
+			}
+		}
 		const bySets = (a: Intersection<T>, b: Intersection<T>) => {
 			const ka = keys.get(a)!;
 			const kb = keys.get(b)!;
@@ -422,7 +479,9 @@ function rankAndFilter<T>(
 					? bySets(a, b)
 					: sortIntersectionsBy === 'cardinality'
 						? a.size - b.size
-						: a.degree - b.degree;
+						: sortIntersectionsBy === 'deviation'
+							? dev.get(a)! - dev.get(b)!
+							: a.degree - b.degree;
 			if (primary !== 0) return dir * primary;
 			// stable, readable tie-break: secondary metric, then by id
 			const secondary =
@@ -504,7 +563,8 @@ export function fromIntersections(
 	const ranked = rankAndFilter(
 		all,
 		{ sortIntersectionsBy: 'none', ...options },
-		sets.map((s) => s.name)
+		sets.map((s) => s.name),
+		(g) => expectedSize(g.sets, sets, total ?? NaN)
 	);
 	return {
 		sets,
