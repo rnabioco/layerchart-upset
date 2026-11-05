@@ -18,7 +18,7 @@
 		<p class="desc">
 			<code>limit</code> drops intersections; <code>onresult</code> and the <code>footer</code> snippet say how many.
 		</p>
-		<code>limit={'{8}'} onresult={'{(r) => …}'} {'{#snippet footer({ shown, total })} … {/snippet}'}</code>
+		<code>{`limit={8} onresult={(r) => (report = r)}`}</code>
 		<label>
 			limit
 			<select bind:value={hiddenLimit} data-testid="hidden-limit">
@@ -50,7 +50,7 @@
 			<code>filterControls</code> renders a bar for min size, degree, limit and which sets to show; the filter props
 			are bindable.
 		</p>
-		<code>filterControls bind:minSize bind:limit bind:hiddenSets</code>
+		<code>{`filterControls bind:minSize bind:limit bind:hiddenSets`}</code>
 		<div class="chart">
 			<UpSet
 				{data}
@@ -69,7 +69,7 @@
 	<section>
 		<h2>Filter controls (controlled)</h2>
 		<p class="desc">With <code>controlled</code> the controls only call <code>onfilterchange</code>.</p>
-		<code>controlled filterControls minSize={'{10}'} onfilterchange</code>
+		<code>{`controlled filterControls minSize={10} onfilterchange={(next) => (filters = next)}`}</code>
 		<div class="chart">
 			<UpSet
 				{data}

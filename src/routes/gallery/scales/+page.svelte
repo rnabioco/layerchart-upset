@@ -23,7 +23,7 @@
 			<code>scaleToggle</code> adds a button; <code>bind:scale</code> follows it. Sizes span four decades and one
 			combination is empty, so the toggle picks <code>symlog</code>.
 		</p>
-		<code>bind:scale scaleToggle minSize={'{0}'}</code>
+		<code>{`bind:scale scaleToggle minSize={0}`}</code>
 		<div class="chart">
 			<UpSet
 				intersections={decadeCounts}
@@ -40,7 +40,7 @@
 	<section>
 		<h2>Size scale (controlled)</h2>
 		<p class="desc">With <code>controlled</code> the toggle only calls <code>onscalechange</code>.</p>
-		<code>scale={'{controlledScale}'} controlled scaleToggle onscalechange</code>
+		<code>{`controlled scale={mine} scaleToggle onscalechange={(next) => (mine = next)}`}</code>
 		<div class="chart">
 			<UpSet
 				intersections={decadeCounts.filter((d) => d.size > 0)}
