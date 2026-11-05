@@ -69,8 +69,21 @@ Non-goal: multi-select.
 
 ## S6 — Query overlays
 
-`queries: { id, color, filter(item) }[]` draws a sub-bar per query. Requires `data` (not precomputed input);
-linear scale only (warn otherwise). Tests: `query_counts_match_filter`.
+*Reviewed.* `queries?: { id: string; color: string; filter(item: T): boolean }[]`.
+
+- Each query draws an overlay bar in every column: same x and width as the size bar, height = number of the column's
+  `items` that pass `filter`, painted in array order (later on top; list the largest first). Queries are subsets of
+  the column, not a partition, so overlays are not stacked. Zero counts draw nothing.
+- Works on every scale (heights go through `sizeScale`/`clampSize` like the bars); the earlier "linear only" is dropped.
+- Overlays are `pointer-events: none`, so click, hover and keyboard stay on the base bar. The tooltip text and
+  `aria-label` gain ` · {id}: n` per query; `data-upset-query={id}` and `data-n` on each overlay.
+- Counts come from `items`: needs `data` and `keepItems !== false`. With precomputed `intersections` or
+  `keepItems: false` the prop is ignored with one `console.warn`.
+- Counts are memoized per result, not recomputed per render or pointer move.
+- Exports as part of the bar panel (S8 needs no change).
+- Non-goals: legend, per-query sorting/filtering, side-by-side bars, overlays on the set-size panel.
+- Tests: `query_counts_match_filter`, `query_ignored_without_items` (unit); `query_overlay_heights`,
+  `query_does_not_block_select` (browser).
 
 ## S7 — Empty intersections  *(implemented)*
 
@@ -84,12 +97,48 @@ clone); `exportPNG(el, scale): Promise<Blob>`. Tests: `export_svg_has_all_bars`,
 
 ## S9 — Stacked bars by attribute
 
-`stackBy?: keyof T | (item) => string`, `stackColors`. Linear only; under log draws totals and warns. Needs a spec
-review first (touches Rect loop and colour precedence).
+*Reviewed.* `stackBy?: keyof T | ((item: T) => string)`, `stackColors?: Record<string, string>`,
+`stackOrder?: string[]`, `stackLegend?: boolean`.
+
+- A column's bar is split into one segment per category among its `items`; segment heights are category counts and
+  sum to the column size.
+- **Precedence:** with `stackBy`, segment colors replace the bar fill (`stackColors[cat]`, else a built-in
+  categorical palette indexed by `stackOrder`). `color`/`colorOf` still colors the matrix dots and connectors, and
+  the selected outline and dimming apply to the whole column.
+- Order bottom to top is `stackOrder`, default categories by overall count, descending; ties alphabetical.
+  Missing or null values are the category `"(none)"`.
+- Implementation shape: the existing bar `Rect` stays as the interactive base (events, `data-*`, outline) with its
+  fill hidden; segments are drawn above it with `pointer-events: none` and only the top segment gets the rounded
+  corners.
+- Scales: linear only. Under `log`/`symlog` draw the unstacked totals and warn once, since stacked segments have no
+  meaning on a log axis.
+- Needs `data` and `keepItems !== false`, same warn-and-ignore as S6. `stackBy` and S6 `queries` together: `stackBy`
+  wins, `queries` ignored with a warn.
+- `stackLegend` renders an HTML legend row above the plot with swatches in the same order; it sits outside the grid
+  like the filter bar and is not exported.
+- Tooltip and `aria-label` gain ` · {cat}: n` per non-empty category.
+- Non-goals: normalized (100%) stacks, stacking the set-size panel, interactive legend filtering.
+- Tests: `stack_segments_sum_to_size`, `stack_order_default_by_count`, `stack_log_falls_back` (unit);
+  `stack_segment_colors`, `stack_keeps_selection`, `stack_legend_matches_segments` (browser).
 
 ## S10 — Per-column annotation snippet
 
-`annotation?: Snippet<[{ intersection, x, width }]>`, `annotationHeight`. Spec review first.
+*Reviewed.* `annotation?: Snippet<[AnnotationContext<T>]>` with `{ intersection, index, x, width, height }`, and
+`annotationHeight?: number` (default 24).
+
+- Placement: a new grid row **between the size bars and the matrix**, added only when `annotation` is set, so the
+  default layout stays identical. `grid-template-rows` gains one entry, and the set panel and corner cells get an
+  empty spacer in that row. The cross-cutting "no grid change" rule is relaxed for this one prop; the issue-7 width
+  and scroll tests must still pass untouched.
+- The row is HTML, not SVG: one wrapper per column positioned at the matrix column's `x` (relative to the matrix,
+  after `labelWidth`) with the column `width`, containing the snippet. This lets callers render text, badges or
+  inline sparklines. Pass-through pointer events; the snippet owns its own interactivity.
+- Dimming follows the column (`opacity(id)`), selection does not restyle the annotation.
+- Wide plots: the row sits inside `.upset`, so it scrolls and fits with the plot.
+- S8 export: HTML annotations are not exported; document it. (SVG-only export is the stated contract.)
+- Non-goals: annotation above the size bars, a row for sets, built-in annotation types, per-column heights.
+- Tests: `annotation_row_absent_by_default`, `annotation_aligned_with_columns` (x/width equal the bar's),
+  `annotation_follows_dimming`, and the existing width tests unchanged (browser).
 
 ## S11 — Percent axis  *(implemented as labels only: bar lengths and tooltips are unchanged)*
 
