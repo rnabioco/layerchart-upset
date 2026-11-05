@@ -76,6 +76,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `onsetselect(set, previous)` | | called when a set is selected or cleared (`null`) |
 | `scale` (bindable) `setScale` | `linear` | size scale of the bars: `linear`, `log` or `symlog` (shows 0); `setScale` overrides the set-size panel |
 | `scaleToggle` `onscalechange(next, previous)` | `false` | a button that switches linear ↔ log (symlog when a size is 0) |
+| `queries` | | `[{ id, color, filter(item) }]`: draws an overlay bar per query in every column, as tall as the number of its rows passing `filter` (painted in order, largest first; not stacked). Needs `data` and `keepItems`; the default tooltip lists the counts. `queryCounts(result, queries)` gives the same numbers without the component |
 | `normalize` | `none` | `total` labels the size axes and bar labels as a percentage of all items; bars are unchanged. Needs a known total (pass `total` with precomputed input), otherwise counts are shown |
 | `showEmpty` | `false` | also list combinations no item has, as size-0 columns (degree filters apply; `minSize` then defaults to 0; ignored above 20 sets). Under `scale="log"` zeros get no bar; use `symlog` to draw them |
 | `keepItems` | `true` | `false` leaves each intersection's `items` empty, for large inputs where only counts matter |

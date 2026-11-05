@@ -406,6 +406,35 @@ export function membersOf<T>(result: Pick<UpSetResult<T>, 'intersections'>, id: 
 	return result.intersections.find((g) => g.id === id)?.items ?? [];
 }
 
+/** A subset of the items to highlight inside every column: `UpSet`'s `queries` draw one overlay bar each. */
+export interface UpSetQuery<T> {
+	id: string;
+	color: string;
+	filter: (item: T) => boolean;
+}
+
+/**
+ * For each intersection id, how many of its `items` pass each query (same order as `queries`).
+ * Needs the rows, so it counts nothing for precomputed input or `keepItems: false`.
+ */
+export function queryCounts<T>(
+	result: Pick<UpSetResult<T>, 'intersections'>,
+	queries: UpSetQuery<T>[]
+): Map<string, number[]> {
+	const out = new Map<string, number[]>();
+	for (const g of result.intersections) {
+		out.set(
+			g.id,
+			queries.map((q) => {
+				let n = 0;
+				for (const item of g.items) if (q.filter(item)) n++;
+				return n;
+			})
+		);
+	}
+	return out;
+}
+
 export interface CsvOptions<T> {
 	/** Adds an `items` column: this text for each row of the intersection, joined with `;`. */
 	items?: (item: T) => string;

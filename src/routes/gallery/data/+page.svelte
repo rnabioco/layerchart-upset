@@ -61,4 +61,24 @@
 		<p class="desc" data-testid="export-png">{exportPng}</p>
 		<p class="desc" data-testid="export-svg" hidden>{exportSvg}</p>
 	</section>
+
+	<section>
+		<h2>Query overlays</h2>
+		<p class="desc">
+			Each query draws an overlay in every column, as tall as the number of its rows that pass
+			<code>filter</code>. Hover a column to see the counts.
+		</p>
+		<code>{`queries={[{ id: 'first half', color: '#f6ad55', filter: (r) => r.id < 300 }, { id: 'every 10th', color: '#c53030', filter: (r) => r.id % 10 === 0 }]}`}</code>
+		<div class="chart" data-testid="queries">
+			<UpSet
+				{data}
+				sets={genres}
+				minSize={15}
+				queries={[
+					{ id: 'first half', color: '#f6ad55', filter: (r) => (r.id as number) < 300 },
+					{ id: 'every 10th', color: '#c53030', filter: (r) => (r.id as number) % 10 === 0 }
+				]}
+			/>
+		</div>
+	</section>
 </div>
