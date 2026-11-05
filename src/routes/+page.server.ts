@@ -18,7 +18,11 @@ export async function load() {
 	for (const [i, t] of tokens.entries()) {
 		if (t.type !== 'code') continue;
 		const lang = LANGS.has(t.lang ?? '') ? t.lang! : 'text';
-		const code = await codeToHtml(t.text, { lang, theme: 'github-light' });
+		const code = await codeToHtml(t.text, {
+			lang,
+			themes: { light: 'github-light', dark: 'github-dark' },
+			defaultColor: false
+		});
 		tokens[i] = {
 			type: 'html',
 			raw: t.raw,
