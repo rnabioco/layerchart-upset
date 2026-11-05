@@ -8,6 +8,9 @@ export function makeData(n = 600, seed = 42) {
 		// `era` is derived from the index (no random draw), so the genre memberships are unchanged.
 		const row: Record<string, unknown> = { id: i, era: i < 200 ? '1990s' : i < 420 ? '2000s' : '2010s' };
 		genres.forEach((g, j) => (row[g] = rand() < weights[j]));
+		// `rating` is a pure function of the index and the memberships (no random draw), so nothing above changes.
+		const noise = ((i * 7919) % 101) / 101 + ((i * 104729) % 53) / 53 - 1; // about -1..1
+		row.rating = Math.round((5 + 0.5 * genres.filter((g) => row[g]).length + 1.6 * noise) * 10) / 10;
 		return row;
 	});
 }

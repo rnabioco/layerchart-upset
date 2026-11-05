@@ -8,6 +8,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `summarize(result, valueOf)` and the `Summary` type: per-column quartiles, mean, Tukey whiskers and outliers of a numeric
+  row attribute, for box plots in the `annotation` row. Needs the rows (empty without them).
 - `exportSVG` / `exportPNG` take `clean: true` to export the neutral state (no selection outline, no dimming); text carries
   its computed `font-family` and `font-size`. Web fonts are not embedded.
 - `onsethover` and per-set hover linking: hovering or focusing a set bar or row label dims the columns that do not

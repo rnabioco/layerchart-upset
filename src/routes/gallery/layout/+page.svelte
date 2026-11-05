@@ -1,11 +1,15 @@
 <script lang="ts">
-	import { UpSet } from '../../../lib/index.js';
+	import { UpSet, computeUpset, summarize } from '../../../lib/index.js';
 	import { genres, makeData } from '../../demo-data.js';
 	import CodeBlock from '../CodeBlock.svelte';
 
 	let { data: examples } = $props();
 
 	const data = makeData();
+	const result = computeUpset(data, genres, { minSize: 25 });
+	const ratings = summarize(result, 'rating');
+	const lo = 0;
+	const hi = 10;
 </script>
 
 <CodeBlock html={examples.script} label="Show setup script" />
@@ -75,6 +79,41 @@
 			</UpSet>
 		</div>
 		<CodeBlock html={examples.code["Annotation row"]} />
+	</section>
+
+	<section>
+		<h2>Box plot per column (annotation)</h2>
+		<p class="desc">
+			<code>summarize(result, 'rating')</code> gives quartiles, whiskers and outliers per column; the
+			<code>annotation</code> snippet draws one box plot each on a shared y-axis.
+		</p>
+		<div class="chart" data-testid="boxplots">
+			<UpSet {data} sets={genres} minSize={25} annotationHeight={90}>
+				{#snippet annotation({ intersection, width, height })}
+					{@const s = ratings.get(intersection.id)}
+					{@const y = (v: number) => height - 4 - ((v - lo) / (hi - lo)) * (height - 8)}
+					{#if s && s.n > 0}
+						<svg {width} {height} style="display:block" data-boxplot>
+							<line x1={width / 2} x2={width / 2} y1={y(s.whiskerLow)} y2={y(s.whiskerHigh)} stroke="currentColor" />
+							<rect
+								x={width * 0.2}
+								y={y(s.q3)}
+								width={width * 0.6}
+								height={Math.max(1, y(s.q1) - y(s.q3))}
+								fill="var(--upset-bar, steelblue)"
+								fill-opacity="0.45"
+								stroke="currentColor"
+							/>
+							<line x1={width * 0.2} x2={width * 0.8} y1={y(s.median)} y2={y(s.median)} stroke="currentColor" stroke-width="2" />
+							{#each s.outliers as o}
+								<circle cx={width / 2} cy={y(o)} r="1.5" fill="none" stroke="currentColor" />
+							{/each}
+						</svg>
+					{/if}
+				{/snippet}
+			</UpSet>
+		</div>
+		<CodeBlock html={examples.code["Box plot per column (annotation)"]} />
 	</section>
 
 	<section>

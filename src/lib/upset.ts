@@ -641,6 +641,79 @@ export function stackSegments<T>(
 	return { order: full, segments };
 }
 
+/** Five-number summary of a numeric attribute in one column, as drawn by a Tukey box plot. */
+export interface Summary {
+	/** Number of finite values. */
+	n: number;
+	min: number;
+	q1: number;
+	median: number;
+	q3: number;
+	max: number;
+	mean: number;
+	/** Smallest value that is not below `q1 - 1.5 * IQR`. */
+	whiskerLow: number;
+	/** Largest value that is not above `q3 + 1.5 * IQR`. */
+	whiskerHigh: number;
+	/** Values outside the whiskers, ascending. */
+	outliers: number[];
+}
+
+/** Linear-interpolated quantile (R type 7) of an ascending, non-empty array. */
+function quantile(sorted: number[], p: number): number {
+	const h = (sorted.length - 1) * p;
+	const lo = Math.floor(h);
+	const hi = Math.min(lo + 1, sorted.length - 1);
+	return sorted[lo] + (h - lo) * (sorted[hi] - sorted[lo]);
+}
+
+/**
+ * Summarise a numeric attribute of the rows in every column: quartiles (type 7, linear interpolation), mean and
+ * Tukey whiskers (1.5 * IQR) with outliers, keyed by intersection id. `valueOf` is a key of the row or a function;
+ * `null`, `undefined`, `NaN` and other non-finite values are ignored. A column whose rows have no usable value gets
+ * `n: 0` and `NaN` in every other field (`outliers` is empty). Needs the rows: for precomputed input or
+ * `keepItems: false` there are no rows, so the map is empty.
+ */
+export function summarize<T>(
+	result: Pick<UpSetResult<T>, 'intersections'>,
+	valueOf: (keyof T & string) | ((item: T) => number | null | undefined)
+): Map<string, Summary> {
+	const out = new Map<string, Summary>();
+	for (const g of result.intersections) {
+		const items = g.items;
+		if (items.length === 0) continue;
+		const v: number[] = [];
+		for (const item of items) {
+			const x = typeof valueOf === 'function' ? valueOf(item) : (item as Record<string, unknown>)[valueOf];
+			if (typeof x === 'number' && Number.isFinite(x)) v.push(x);
+		}
+		if (v.length === 0) {
+			const nan = NaN;
+			out.set(g.id, { n: 0, min: nan, q1: nan, median: nan, q3: nan, max: nan, mean: nan, whiskerLow: nan, whiskerHigh: nan, outliers: [] });
+			continue;
+		}
+		v.sort((a, b) => a - b);
+		const q1 = quantile(v, 0.25);
+		const q3 = quantile(v, 0.75);
+		const lo = q1 - 1.5 * (q3 - q1);
+		const hi = q3 + 1.5 * (q3 - q1);
+		const inside = v.filter((x) => x >= lo && x <= hi);
+		out.set(g.id, {
+			n: v.length,
+			min: v[0],
+			q1,
+			median: quantile(v, 0.5),
+			q3,
+			max: v[v.length - 1],
+			mean: v.reduce((a, b) => a + b, 0) / v.length,
+			whiskerLow: inside[0],
+			whiskerHigh: inside[inside.length - 1],
+			outliers: v.filter((x) => x < lo || x > hi)
+		});
+	}
+	return out;
+}
+
 export interface CsvOptions<T> {
 	/** Adds an `items` column: this text for each row of the intersection, joined with `;`. */
 	items?: (item: T) => string;

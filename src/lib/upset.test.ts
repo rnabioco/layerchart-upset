@@ -9,6 +9,7 @@ import {
 	queryCounts,
 	reportOf,
 	stackSegments,
+	summarize,
 	toCSV,
 	sizeDomain,
 	sizeScale,
@@ -467,5 +468,62 @@ describe('maxOf', () => {
 		expect(maxOf([], 1)).toBe(1);
 		expect(maxOf([0, -2], 1)).toBe(1);
 		expect(maxOf(Array.from({ length: 300000 }, (_, i) => i), 1)).toBe(299999);
+	});
+});
+
+describe('summarize', () => {
+	// every row is in set A only, so a single column holds all the values
+	const mk = (vals: (number | null | undefined | string)[]) =>
+		vals.map((v) => ({ A: true, B: false, v }));
+	const one = (vals: (number | null | undefined | string)[], by: any = 'v', opts = {}) => {
+		const r = computeUpset(mk(vals), ['A', 'B'], opts);
+		return summarize(r, by).get('A')!;
+	};
+
+	it('summarize_quartiles_match_reference', () => {
+		// odd n: 1..5 -> q1 2, median 3, q3 4 (type 7)
+		const a = one([5, 1, 3, 2, 4]);
+		expect([a.n, a.min, a.q1, a.median, a.q3, a.max, a.mean]).toEqual([5, 1, 2, 3, 4, 5, 3]);
+		// even n: 1,2,3,4 -> q1 1.75, median 2.5, q3 3.25
+		const b = one([4, 3, 2, 1]);
+		expect([b.q1, b.median, b.q3, b.mean]).toEqual([1.75, 2.5, 3.25, 2.5]);
+		expect([b.whiskerLow, b.whiskerHigh, b.outliers]).toEqual([1, 4, []]);
+	});
+
+	it('summarize_ignores_non_finite', () => {
+		const s = one([1, 2, 3, null, undefined, NaN, Infinity, -Infinity, 'x']);
+		expect(s.n).toBe(3);
+		expect(s.median).toBe(2);
+		const none = one([null, NaN]);
+		expect(none.n).toBe(0);
+		expect(Number.isNaN(none.median)).toBe(true);
+		expect(none.outliers).toEqual([]);
+	});
+
+	it('summarize_outliers_tukey', () => {
+		// q1 2.25, q3 4.75, IQR 2.5 -> fences -1.5 and 8.5
+		const hi = one([1, 2, 3, 4, 5, 100]);
+		expect(hi.outliers).toEqual([100]);
+		expect([hi.whiskerLow, hi.whiskerHigh, hi.max]).toEqual([1, 5, 100]);
+		// q1 1.25, q3 3.75, IQR 2.5 -> fences -2.5 and 7.5
+		const lo = one([-100, 1, 2, 3, 4, 5]);
+		expect(lo.outliers).toEqual([-100]);
+		expect([lo.whiskerLow, lo.whiskerHigh, lo.min]).toEqual([1, 5, -100]);
+	});
+
+	it('summarize_empty_without_items', () => {
+		expect(summarize(computeUpset(mk([1, 2, 3]), ['A', 'B'], { keepItems: false }), 'v').size).toBe(0);
+		const pre = fromIntersections(['A', 'B'], [{ sets: ['A'], size: 3 }]);
+		expect(summarize(pre, 'v' as never).size).toBe(0);
+	});
+
+	it('summarize_by_function_and_key', () => {
+		const rows = mk([1, 2, 3, 4]);
+		const r = computeUpset(rows, ['A', 'B']);
+		const k = summarize(r, 'v').get('A')!;
+		const f = summarize(r, (row: { v: unknown }) => (row.v as number) * 2).get('A')!;
+		expect(f.median).toBe(k.median * 2);
+		expect(f.mean).toBe(k.mean * 2);
+		expect([...summarize(r, 'v').keys()]).toEqual(r.intersections.map((g) => g.id));
 	});
 });
