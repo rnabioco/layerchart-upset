@@ -99,6 +99,28 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 
 Run `npm run dev` for the demo page.
 
+### Summaries in the annotation row
+
+`summarize(result, valueOf)` returns, per intersection id, `{ n, min, q1, median, q3, max, mean, whiskerLow, whiskerHigh, outliers }`
+(type 7 quartiles, 1.5 * IQR whiskers; null/NaN values are ignored). `valueOf` is a row key or a function. It needs the rows,
+so it returns an empty map for precomputed input or `keepItems: false`.
+
+```svelte
+<script>
+  const result = computeUpset(data, sets);
+  const stats = summarize(result, 'rating');
+</script>
+
+<UpSet {data} {sets} annotationHeight={90}>
+  {#snippet annotation({ intersection, width, height })}
+    {@const s = stats.get(intersection.id)}
+    {#if s && s.n > 0}
+      <!-- scale s.q1, s.median, s.q3, s.whiskerLow, s.whiskerHigh, s.outliers to `height` -->
+    {/if}
+  {/snippet}
+</UpSet>
+```
+
 ## Exporting the figure
 
 `exportSVG(el)` returns a standalone SVG string of the plot and `exportPNG(el, scale = 2)` a `Promise<Blob>`. Pass
