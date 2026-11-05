@@ -36,7 +36,7 @@ const run = (clean) =>
 					[style(e, 'opacity'), style(e, 'fill-opacity')].some((v) => Number(v) > 0 && Number(v) < 1)
 				).length,
 				outlined: [...doc.querySelectorAll('[data-upset-bar]')].filter(
-					(e) => style(e, 'stroke') !== 'none' && Number(style(e, 'stroke-width')) > 0
+					(e) => style(e, 'stroke') !== 'none' && parseFloat(style(e, 'stroke-width')) > 0
 				).length,
 				fonts: [...doc.querySelectorAll('text')].every((t) => t.getAttribute('font-family') && t.getAttribute('font-size')),
 				texts: doc.querySelectorAll('text').length
