@@ -75,6 +75,8 @@
 		stackOrder?: string[];
 		/** Show a swatch legend above the plot. */
 		stackLegend?: boolean;
+		/** Show a "Clear selection" button while a column or set is selected (default true). Esc does the same from anywhere once you have clicked the plot. */
+		clearButton?: boolean;
 		/** `total` labels the size axes and bar labels as a percentage of all items (bar lengths do not change). Needs a known total: with precomputed `intersections` pass `total`, otherwise counts are shown. */
 		normalize?: 'none' | 'total';
 		/** Width/height of one matrix cell, px. */
@@ -239,6 +241,7 @@
 		stackColors,
 		stackOrder,
 		stackLegend = false,
+		clearButton = true,
 		...rest
 	}: Props = $props();
 
@@ -473,6 +476,38 @@
 		minSize != null || maxSize != null || minDegree != null || maxDegree != null || limit != null || hiddenSets.length > 0
 	);
 
+	function clearSelected() {
+		if (selected == null) return;
+		const previous = result.intersections.find((d) => d.id === selected) ?? null;
+		if (!controlled) selected = null;
+		onselect?.(null, previous);
+	}
+	function clearSet() {
+		if (selectedSet == null) return;
+		const previous = result.sets.find((s) => s.name === selectedSet) ?? null;
+		if (!controlled) selectedSet = null;
+		onsetselect?.(null, previous);
+	}
+	/** Drop both the selected column and the selected set (Esc, or the Clear button). */
+	function clearAll() {
+		clearSelected();
+		clearSet();
+	}
+	const hasSelection = $derived(selected != null || selectedSet != null);
+
+	// Esc works wherever the focus is once you have interacted with this plot (clicking a row label or the
+	// matrix leaves the focus on the page, where the bars' own key handlers never see it).
+	let engaged = false;
+	function windowKeydown(e: KeyboardEvent) {
+		if (e.key !== 'Escape' || !engaged || !hasSelection || e.defaultPrevented) return;
+		const t = e.target as HTMLElement | null;
+		if (t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
+		clearAll();
+	}
+	function windowPointerdown(e: PointerEvent) {
+		engaged = !!root && e.target instanceof Node && root.contains(e.target);
+	}
+
 	function selectSet(name: string) {
 		const info = result.sets.find((s) => s.name === name);
 		if (!info) return;
@@ -488,11 +523,8 @@
 			return;
 		}
 		if (e.key === 'Escape') {
-			if (selectedSet != null) {
-				const previous = result.sets.find((s) => s.name === selectedSet) ?? null;
-				if (!controlled) selectedSet = null;
-				onsetselect?.(null, previous);
-			}
+			e.preventDefault(); // handled here, not again by the window listener
+			clearAll();
 			return;
 		}
 		const bars = Array.from(root?.querySelectorAll<SVGElement>('[data-upset-set-bar]') ?? []);
@@ -548,11 +580,8 @@
 			return;
 		}
 		if (e.key === 'Escape') {
-			if (selected != null) {
-				const previous = result.intersections.find((d) => d.id === selected) ?? null;
-				if (!controlled) selected = null;
-				onselect?.(null, previous);
-			}
+			e.preventDefault(); // handled here, not again by the window listener
+			clearAll();
 			return;
 		}
 		const bars = Array.from(root?.querySelectorAll<SVGElement>('[data-upset-bar]') ?? []);
@@ -580,6 +609,8 @@
 		onhover?.(null);
 	}
 </script>
+
+<svelte:window onkeydown={windowKeydown} onpointerdowncapture={windowPointerdown} />
 
 {#if stackLegend && stack}
 	<ul class="upset-legend" aria-label="Stack categories" data-upset-legend="">
@@ -691,6 +722,17 @@
 	}}
 >
 	<div class="corner">{setPanel ? (setLabel ?? '') : ''}</div>
+	{#if clearButton && hasSelection}
+		<button
+			type="button"
+			class="upset-clear"
+			data-upset-clear=""
+			title="Clear the selection (Esc)"
+			onclick={clearAll}
+		>
+			Clear selection ✕
+		</button>
+	{/if}
 	{#if scaleToggle}
 		<button
 			type="button"
@@ -1071,6 +1113,25 @@
 	.upset-filters button:disabled {
 		opacity: 0.4;
 		cursor: default;
+	}
+	.upset-clear {
+		position: absolute;
+		top: 0;
+		right: 4px;
+		z-index: 1;
+		font: inherit;
+		font-size: 0.85em;
+		line-height: 1.2;
+		padding: 0 6px;
+		cursor: pointer;
+		border-radius: 3px;
+		color: var(--upset-control-fg, var(--upset-text, currentColor));
+		background: transparent;
+		border: 1px solid var(--upset-control-border, var(--upset-grid, color-mix(in srgb, currentColor 25%, transparent)));
+	}
+	.upset-clear:hover {
+		border-color: var(--upset-control-on, var(--upset-bar, #2b6cb0));
+		color: var(--upset-control-on, var(--upset-bar, #2b6cb0));
 	}
 	.upset-scale-toggle {
 		position: absolute;

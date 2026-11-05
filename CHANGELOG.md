@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Selections are easier to reset: a "Clear selection" button appears while a column or set is selected (`clearButton`,
+  default on), and Esc now clears from anywhere once you have clicked the plot, not only when a bar has focus. Esc and
+  the button clear the selected column and the selected set together. `controlled` plots still only call
+  `onselect` / `onsetselect`.
+
 ### Added
 
 - `stackBy` (with `stackColors`, `stackOrder`, `stackLegend`): split each size bar into segments by a row attribute.
