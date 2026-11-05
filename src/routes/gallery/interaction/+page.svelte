@@ -42,9 +42,9 @@
 				dimOpacity={0.15}
 				onsethover={(s) => (hoverSet = s?.name ?? null)}
 			/>
-			<small>selected: {selected ?? 'none'}</small>
-			<div data-set-hover>hovered set: {hoverSet ?? 'none'}</div>
 		</div>
+		<small class="probe" aria-hidden="true">selected: {selected ?? 'none'}</small>
+		<div class="probe" aria-hidden="true" data-set-hover>hovered set: {hoverSet ?? 'none'}</div>
 		<CodeBlock html={examples.code["Selection and highlighting"]} />
 	</section>
 
@@ -81,9 +81,9 @@
 				selected={controlledPick}
 				onselect={(i) => controlledCalls.push(i?.id ?? null)}
 			/>
-			<small data-calls>calls: {controlledCalls.map((c) => c ?? 'null').join(',')}</small>
 			<button type="button" data-set-pick onclick={() => (controlledPick = 'a')}>select a</button>
 		</div>
+		<small class="probe" aria-hidden="true" data-calls>calls: {controlledCalls.map((c) => c ?? 'null').join(',')}</small>
 		<CodeBlock html={examples.code["Controlled selection"]} />
 	</section>
 
@@ -98,7 +98,7 @@
 			/>
 		</div>
 		<CodeBlock html={examples.code["onselect previous argument"]} />
-		<pre data-calls>{selectCalls.join('\n')}</pre>
+		<pre class="probe" aria-hidden="true" data-calls>{selectCalls.join('\n')}</pre>
 	</section>
 
 	<section>
@@ -110,7 +110,7 @@
 			<UpSet {data} sets={genres} minSize={10} bind:selectedSet={pickedSet} />
 		</div>
 		<CodeBlock html={examples.code["Set selection (bound)"]} />
-		<p class="desc" data-testid="set-bound">{pickedSet ?? 'none'}</p>
+		<p class="probe" aria-hidden="true" data-testid="set-bound">{pickedSet ?? 'none'}</p>
 	</section>
 
 	<section>
@@ -127,6 +127,6 @@
 			/>
 		</div>
 		<CodeBlock html={examples.code["Set selection (controlled)"]} />
-		<p class="desc" data-testid="set-ctrl-calls">{setCalls.join(',')}</p>
+		<p class="probe" aria-hidden="true" data-testid="set-ctrl-calls">{setCalls.join(',')}</p>
 	</section>
 </div>

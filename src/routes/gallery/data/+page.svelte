@@ -61,7 +61,7 @@
 		</div>
 		<CodeBlock html={examples.code["Empty intersections and export"]} />
 		<button type="button" data-testid="export-run" onclick={exportNow}>Export</button>
-		<p class="desc" data-testid="export-png">{exportPng}</p>
+		<p class="probe" aria-hidden="true" data-testid="export-png">{exportPng}</p>
 		<p class="desc" data-testid="export-svg" hidden>{exportSvg}</p>
 	</section>
 
