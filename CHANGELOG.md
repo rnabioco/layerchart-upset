@@ -8,6 +8,9 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Precomputed `intersections` can use `stack` and `queries` without rows: `segments` (counts per category) with
+  `stack` and no `by`, and `counts` (per query id) for queries without a `filter`. `UpSetQuery.filter` and
+  `StackOptions.by` are now optional. (#44)
 - `fit="fill"` pads with empty slots so the plot spans a wide container (cells still never grow, so rows keep their
   height), and `showLabels="auto"` drops count labels wider than their column. (#42)
 - Deviation view: `sortIntersectionsBy: 'deviation'` orders columns by observed minus expected size under

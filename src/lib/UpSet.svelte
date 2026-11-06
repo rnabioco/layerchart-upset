@@ -440,8 +440,14 @@
 	// Queries need the rows: with precomputed input or keepItems=false they are ignored (warned once).
 	const rowsUsable = $derived(!intersections && keepItems !== false);
 	// stack: needs the rows and a linear scale; it wins over queries.
-	const stacking = $derived(stackProp != null && rowsUsable && scale === 'linear');
-	const activeQueries = $derived(rowsUsable && !stacking && !stackProp ? (queries ?? []) : []);
+	// With no `by`, the segments come from precomputed intersections (`segments`).
+	const stackFromSegments = $derived(stackProp != null && stackProp.by === undefined);
+	const hasSegments = $derived(result.intersections.some((g) => g.segments));
+	const stackUsable = $derived(stackFromSegments ? hasSegments : rowsUsable);
+	const stacking = $derived(stackProp != null && stackUsable && scale === 'linear');
+	// A query with a `filter` needs the rows; one without reads `counts` of precomputed intersections.
+	const queryUsable = (q: UpSetQuery<T>) => (q.filter ? rowsUsable : !!intersections);
+	const activeQueries = $derived(!stacking && !stackProp ? (queries ?? []).filter(queryUsable) : []);
 	const counts = $derived(queryCounts(result, activeQueries));
 	const stackData = $derived(stacking ? stackSegments(result, stackProp!.by, stackProp!.order) : null);
 	const PALETTE = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'];
@@ -453,9 +459,18 @@
 		console.warn(`UpSet: ${msg}`);
 	}
 	$effect(() => {
-		if (queries?.length && !rowsUsable) warnOnce('queries', '`queries` need `data` and keepItems !== false; ignoring them.');
-		if (stackProp != null && !rowsUsable) warnOnce('stack-rows', '`stack` needs `data` and keepItems !== false; ignoring it.');
-		if (stackProp != null && rowsUsable && scale !== 'linear')
+		if (queries?.some((q) => !queryUsable(q)))
+			warnOnce('queries', '`queries` with a `filter` need `data` and keepItems !== false (without a filter they read `counts` of precomputed intersections); ignoring them.');
+		if (stackProp != null && !stackUsable)
+			warnOnce(
+				'stack-rows',
+				stackFromSegments
+					? '`stack` without `by` needs precomputed `intersections` with `segments`; ignoring it.'
+					: '`stack` with `by` needs `data` and keepItems !== false; ignoring it.'
+			);
+		if (stackFromSegments && stackProp != null && result.intersections.some((g) => g.segments && Object.values(g.segments).reduce((a, b) => a + b, 0) > g.size))
+			warnOnce('stack-sum', 'some `segments` sum to more than `size`; the extra is drawn past the bar.');
+		if (stackProp != null && stackUsable && scale !== 'linear')
 			warnOnce('stack-scale', '`stack` needs the linear scale; drawing totals.');
 		if (limit == null && result.intersections.length > 1000)
 			warnOnce('big', `${result.intersections.length} columns drawn; set \`limit\` to keep the plot responsive.`);

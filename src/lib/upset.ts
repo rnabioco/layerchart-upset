@@ -80,6 +80,10 @@ export interface Intersection<T> {
 	items: T[];
 	/** The record this intersection was built from (precomputed input only). */
 	source?: unknown;
+	/** Counts per `stack` category (precomputed input only; see {@link PrecomputedIntersection.segments}). */
+	segments?: Record<string, number>;
+	/** Counts per query id (precomputed input only; see {@link PrecomputedIntersection.counts}). */
+	counts?: Record<string, number>;
 }
 
 /** One combination of sets with a known size, for input that was counted elsewhere. */
@@ -89,6 +93,13 @@ export interface PrecomputedIntersection {
 	/** Names of the member sets (must appear in the `sets` list). */
 	sets: string[];
 	size: number;
+	/**
+	 * Breakdown of `size` by category, for `stack` without row data: `{ control: 25, treated: 15 }`. Should sum to
+	 * `size`; a shortfall draws as `"(none)"`, an excess is drawn past the bar (and warned about once by `UpSet`).
+	 */
+	segments?: Record<string, number>;
+	/** Counts per query id, for `queries` entries that have no `filter`: `{ significant: 12 }`. */
+	counts?: Record<string, number>;
 	[key: string]: unknown;
 }
 
@@ -508,6 +519,18 @@ export interface PrecomputedOptions extends UpSetOptions {
 	intersectionsTotal?: number;
 }
 
+function checkCounts(
+	counts: Record<string, number>,
+	field: string,
+	raw: PrecomputedIntersection
+): Record<string, number> {
+	for (const [k, v] of Object.entries(counts)) {
+		if (typeof v !== 'number' || !Number.isFinite(v) || v < 0)
+			throw new Error(`Intersection "${raw.id ?? raw.sets.join('&')}" has an invalid ${field} count for "${k}" (${String(v)}); expected a number >= 0`);
+	}
+	return counts;
+}
+
 /**
  * Build an {@link UpSetResult} from intersections that were counted elsewhere.
  * Unlike {@link computeUpset}, the order you pass is kept unless you ask for sorting:
@@ -534,7 +557,9 @@ export function fromIntersections(
 			degree: members.length,
 			size: raw.size,
 			items: [],
-			source: raw
+			source: raw,
+			...(raw.segments ? { segments: checkCounts(raw.segments, 'segments', raw) } : {}),
+			...(raw.counts ? { counts: checkCounts(raw.counts, 'counts', raw) } : {})
 		};
 	});
 
@@ -629,12 +654,14 @@ export function membersOf<T>(result: Pick<UpSetResult<T>, 'intersections'>, id: 
 export interface UpSetQuery<T> {
 	id: string;
 	color: string;
-	filter: (item: T) => boolean;
+	/** Which rows count. Omit it for precomputed input, where the count comes from the intersection's `counts[id]`. */
+	filter?: (item: T) => boolean;
 }
 
 /**
  * For each intersection id, how many of its `items` pass each query (same order as `queries`).
- * Needs the rows, so it counts nothing for precomputed input or `keepItems: false`.
+ * A query with a `filter` needs the rows (it counts nothing for precomputed input or `keepItems: false`); one without
+ * reads `counts[id]` of each precomputed intersection.
  */
 export function queryCounts<T>(
 	result: Pick<UpSetResult<T>, 'intersections'>,
@@ -645,8 +672,10 @@ export function queryCounts<T>(
 		out.set(
 			g.id,
 			queries.map((q) => {
+				const { filter } = q;
+				if (!filter) return g.counts?.[q.id] ?? 0;
 				let n = 0;
-				for (const item of g.items) if (q.filter(item)) n++;
+				for (const item of g.items) if (filter(item)) n++;
 				return n;
 			})
 		);
@@ -667,8 +696,11 @@ export interface AnnotationContext<T> {
 /** The category of an item for `stack`: a key of the row or a function; missing values are `"(none)"`. */
 /** The `stack` prop of `UpSet`: split each size bar by a row attribute. */
 export type StackOptions<T> = {
-	/** A key of the row or a function; missing values are `"(none)"`. */
-	by: StackBy<T>;
+	/**
+	 * A key of the row or a function; missing values are `"(none)"`. Omit it with precomputed `intersections` to
+	 * use each intersection's `segments`.
+	 */
+	by?: StackBy<T>;
 	/** Segment colors by category (default: a built-in palette in stack order). */
 	colors?: Record<string, string>;
 	/** Categories bottom to top; the rest follow by overall count, descending. */
@@ -688,12 +720,41 @@ export interface StackResult {
 	segments: Map<string, { category: string; n: number }[]>;
 }
 
+/** Stack from the `segments` of precomputed intersections; a shortfall against `size` is `"(none)"`. */
+function segmentStack<T>(result: Pick<UpSetResult<T>, 'intersections'>, order: string[]): StackResult {
+	const overall = new Map<string, number>();
+	const per = new Map<string, Map<string, number>>();
+	for (const g of result.intersections) {
+		const m = new Map<string, number>();
+		let sum = 0;
+		for (const [c, n] of Object.entries(g.segments ?? {})) {
+			if (n > 0) {
+				m.set(c, n);
+				sum += n;
+			}
+		}
+		if (g.segments && g.size > sum) m.set(STACK_NONE, (m.get(STACK_NONE) ?? 0) + (g.size - sum));
+		for (const [c, n] of m) overall.set(c, (overall.get(c) ?? 0) + n);
+		per.set(g.id, m);
+	}
+	const rest = [...overall.keys()]
+		.filter((c) => !order.includes(c))
+		.sort((a, b) => overall.get(b)! - overall.get(a)! || a.localeCompare(b));
+	const full = [...order, ...rest];
+	const segments = new Map<string, { category: string; n: number }[]>();
+	for (const [id, m] of per) {
+		segments.set(id, full.filter((c) => m.has(c)).map((category) => ({ category, n: m.get(category)! })));
+	}
+	return { order: full, segments };
+}
+
 /** Split each intersection's `items` by category. Needs the rows (nothing is counted without them). */
 export function stackSegments<T>(
 	result: Pick<UpSetResult<T>, 'intersections'>,
-	by: StackBy<T>,
+	by: StackBy<T> | undefined,
 	order: string[] = []
 ): StackResult {
+	if (by === undefined) return segmentStack(result, order);
 	const of = (item: T): string => {
 		const v = typeof by === 'function' ? by(item) : (item as Record<string, unknown>)[by];
 		return v == null || v === '' ? STACK_NONE : String(v);

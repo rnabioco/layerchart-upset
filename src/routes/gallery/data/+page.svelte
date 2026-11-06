@@ -96,4 +96,26 @@
 		</div>
 		<CodeBlock html={examples.code["Stacked bars"]} />
 	</section>
+
+	<section>
+		<h2>Stacked bars and queries from counts</h2>
+		<p class="desc">
+			Precomputed <code>intersections</code> can carry <code>segments</code> (counts per category, for
+			<code>stack</code> without <code>by</code>) and <code>counts</code> (per query id, for queries without a
+			<code>filter</code>); no rows are needed.
+		</p>
+		<div class="chart" data-testid="stacked-counts">
+			<UpSet
+				sets={['A', 'B', 'C']}
+				intersections={[
+					{ sets: ['A'], size: 40, segments: { SE: 25, RI: 15 } },
+					{ sets: ['A', 'B'], size: 30, segments: { SE: 10, RI: 12 } },
+					{ sets: ['C'], size: 20, segments: { SE: 20 } }
+				]}
+				setSizes={{ A: 70, B: 30, C: 20 }}
+				stack={{ legend: true, colors: { SE: '#4e79a7', RI: '#f28e2b' } }}
+			/>
+		</div>
+		<CodeBlock html={examples.code["Stacked bars and queries from counts"]} />
+	</section>
 </div>
