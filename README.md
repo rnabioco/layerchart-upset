@@ -191,6 +191,8 @@ function, `setColors` and `highlightColor` still win for the marks they colour.
 | `--upset-dot-off` | inactive matrix dots | `#d4d4d8` |
 | `--upset-text` | set names and count labels | `currentColor` |
 | `--upset-grid` | y-axis grid lines | `currentColor` at 12% |
+| `--upset-expected` | `showExpected` dashes | `#f59e0b` |
+| `--upset-label-halo` | outline behind count labels when `showExpected` is on | `Canvas` |
 | `--upset-stripe` | alternate row shading | `currentColor` at 6% |
 
 `--upset-grid` and `--upset-stripe` are the final colour, so include any transparency in the value. The tooltip keeps

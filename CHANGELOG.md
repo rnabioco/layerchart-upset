@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `showExpected` dashes no longer vanish on dark bars in light mode: they take `--upset-expected` (default amber), and
+  count labels get a `--upset-label-halo` outline so a dash crossing one stays legible. (#49)
+
 ## [0.7.0] - 2026-11-06
 
 ### Added

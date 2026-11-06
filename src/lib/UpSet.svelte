@@ -939,8 +939,8 @@
 									x2={x + xs.bandwidth()}
 									y1={ey}
 									y2={ey}
-									stroke="currentColor"
 									strokeWidth={2}
+									class="upset-expected"
 									style="pointer-events: none; stroke-dasharray: 3 2"
 									data-upset-expected={ex}
 									data-id={d.id}
@@ -974,7 +974,7 @@
 								{y}
 								dy={-4}
 								textAnchor="middle"
-								class="upset-label"
+								class={showExpected ? 'upset-label upset-label-halo' : 'upset-label'}
 								data-upset-count={d.id}
 							/>
 						{/if}
@@ -1346,6 +1346,16 @@
 	.upset :global(.upset-label) {
 		font-size: 0.92em;
 		fill: var(--upset-text, currentColor);
+	}
+	/* Keeps a count legible where an expected-size dash crosses it. */
+	.upset :global(.upset-label-halo) {
+		stroke: var(--upset-label-halo, Canvas);
+		stroke-width: 3px;
+		stroke-linejoin: round;
+		paint-order: stroke;
+	}
+	.upset :global(.upset-expected) {
+		stroke: var(--upset-expected, #f59e0b);
 	}
 	.upset :global(.upset-set-name) {
 		font-size: 1.08em;
