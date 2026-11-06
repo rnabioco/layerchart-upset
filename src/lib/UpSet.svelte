@@ -88,8 +88,12 @@
 		cellSize?: number;
 		/** Cap the plot's width (number = px, or any CSS length); it scrolls horizontally inside. */
 		maxWidth?: number | string;
-		/** Shrink `cellSize` toward `minCellSize` so the matrix fits the container's width. */
-		fit?: boolean;
+		/**
+		 * Shrink `cellSize` toward `minCellSize` so the matrix fits the container's width. `'fill'` also pads with
+		 * empty slots (like `minSlots`) so that a wide container is filled: cells never grow past `cellSize`, so
+		 * the rows keep their height.
+		 */
+		fit?: boolean | 'fill';
 		/** Smallest cell size `fit` shrinks to, px; below it the plot scrolls. */
 		minCellSize?: number;
 		/** Height of the intersection-size panel, px. */
@@ -140,8 +144,11 @@
 		'aria-label'?: string;
 		/** Color of inactive matrix dots. Unset: `--upset-dot-off`, then `#d4d4d8`. */
 		inactiveColor?: string;
-		/** Show size labels above intersection bars. */
-		showLabels?: boolean;
+		/**
+		 * Show size labels above intersection bars. `'auto'` drops a label whose text is wider than the column
+		 * (about `0.6 · fontSize` per character), so narrow columns do not collide.
+		 */
+		showLabels?: boolean | 'auto';
 		/** Alternate row shading in the matrix. */
 		stripes?: boolean;
 		/**
@@ -305,12 +312,23 @@
 		onresult?.(report);
 	});
 
+	let containerWidth = $state(0);
+
 	const setPanel = $derived(showSetSizes ?? (intersections ? setSizes != null : true));
 	const setPanelWidth = $derived(setPanel ? setBarWidth : 0);
 
 	const setNames = $derived(result.sets.map((s) => s.name));
+	// `fit="fill"`: as many slots as fit the measured width at `cellSize`, so a short list still spans the container.
+	const fillSlots = $derived(
+		fit === 'fill' && containerWidth > 0
+			? Math.floor((containerWidth - setPanelWidth - labelWidth) / cellSizeProp)
+			: 0
+	);
 	const placeholders = $derived(
-		Array.from({ length: Math.max(0, minSlots - result.intersections.length) }, (_, j) => `\0empty-${j}`)
+		Array.from(
+			{ length: Math.max(0, Math.max(minSlots, fillSlots) - result.intersections.length) },
+			(_, j) => `\0empty-${j}`
+		)
 	);
 	const ids = $derived([...result.intersections.map((i) => i.id), ...placeholders]);
 	const maxSetSize = $derived(maxOf(result.sets.map((s) => s.size), 1));
@@ -361,7 +379,6 @@
 		onscalechange?.(next, previous);
 	}
 
-	let containerWidth = $state(0);
 	const cellSize = $derived(
 		fit && containerWidth > 0
 			? Math.min(
@@ -935,7 +952,7 @@
 								/>
 							{/if}
 						{/each}
-						{#if showLabels}
+						{#if showLabels === true || (showLabels === 'auto' && axisFormat(d.size).length * fontSize * 0.6 <= cellSize)}
 							<Text
 								value={axisFormat(d.size)}
 								x={x + xs.bandwidth() / 2}

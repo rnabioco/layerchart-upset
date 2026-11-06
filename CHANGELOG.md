@@ -8,6 +8,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `fit="fill"` pads with empty slots so the plot spans a wide container (cells still never grow, so rows keep their
+  height), and `showLabels="auto"` drops count labels wider than their column. (#42)
 - Deviation view: `sortIntersectionsBy: 'deviation'` orders columns by observed minus expected size under
   independence, `showExpected` marks the expected size on each bar and in the tooltip, and `expectedSize()` /
   `deviations()` are exported for custom coloring.
