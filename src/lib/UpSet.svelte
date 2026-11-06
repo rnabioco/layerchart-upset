@@ -11,6 +11,7 @@
 		sizeDomain,
 		sizeScale,
 		sizeTicks,
+		thinTicks,
 		queryCounts,
 		stackSegments,
 		reportOf,
@@ -56,6 +57,11 @@
 		minSlots?: number;
 		/** Explicit y-axis ticks for the intersection-size axis. */
 		yTicks?: number[];
+		/**
+		 * Explicit ticks for the set-size axis (any scale, used as given). Unset, a non-linear axis picks 1/2/5 × 10ⁿ
+		 * and drops the labels that would collide at this `setBarWidth`.
+		 */
+		setTicks?: number[];
 		/** Number formatter for the y axis and bar labels. */
 		formatSize?: (n: number) => string;
 		/**
@@ -199,6 +205,7 @@
 		maxLabelLength,
 		minSlots = 0,
 		yTicks,
+		setTicks,
 		formatSize = (n: number) => String(n),
 		cellSize: cellSizeProp = 28,
 		maxWidth,
@@ -370,7 +377,19 @@
 					return [hi, lo];
 				})()
 	);
-	const setTickList = $derived(setKind === 'linear' ? [] : (sizeTicks(setKind, setDomain[0]) ?? []));
+	const setTickList = $derived(
+		setTicks ??
+			(setKind === 'linear'
+				? []
+				: thinTicks(
+						sizeTicks(setKind, setDomain[0]) ?? [],
+						setKind,
+						[setDomain[1], setDomain[0]],
+						Math.max(0, setBarWidth - 36),
+						axisFormat,
+						fontSize * 0.6 * 0.92
+					))
+	);
 
 	function toggleScale() {
 		const previous = scale;
