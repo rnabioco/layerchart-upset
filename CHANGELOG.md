@@ -6,10 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `setTicks` sets the set-size axis ticks explicitly, mirroring `yTicks`. (#48)
+
 ### Fixed
 
 - `showExpected` dashes no longer vanish on dark bars in light mode: they take `--upset-expected` (default amber), and
   count labels get a `--upset-label-halo` outline so a dash crossing one stays legible. (#49)
+- Set-size axis labels no longer overplot on a narrow `setBarWidth`: a non-linear axis keeps powers of ten and adds
+  5s and 2s only where they fit. (#48)
 
 ## [0.7.0] - 2026-11-06
 

@@ -94,7 +94,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `tooltip` | true | `false` disables tooltips, `true` is the built-in one, a snippet replaces its content |
 | `describe`, `onhover` | | tooltip / `aria-label` text, hover event |
 | `setLabels` `emphasizedSets` `emphasisMarker` `maxLabelLength` | | row labels |
-| `showSetSizes` `minSlots` `yTicks` `formatSize` | | layout / axis |
+| `showSetSizes` `minSlots` `yTicks` `setTicks` `formatSize` | | layout / axis |
 
 `computeUpset(data, sets, options)` is exported for use without the component.
 

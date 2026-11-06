@@ -16,6 +16,7 @@ import {
 	sizeDomain,
 	sizeScale,
 	sizeTicks,
+	thinTicks,
 	sizeTop
 } from './upset.js';
 
@@ -167,6 +168,16 @@ describe('size scales', () => {
 		expect(sizeTicks('symlog', 100)).toEqual([0, 1, 2, 5, 10, 20, 50, 100]);
 		expect(sizeTicks('symlog', 10000)?.[0]).toBe(0);
 		expect(sizeTicks('linear', 100)).toBeUndefined();
+	});
+
+	it('thin_ticks_keep_decades_when_narrow', () => {
+		const ticks = sizeTicks('log', 100)!;
+		const fmt = (n: number) => String(n);
+		const narrow = thinTicks(ticks, 'log', [LOG_FLOOR, 100], 52, fmt, 6);
+		expect(narrow).toContain(1);
+		expect(narrow).toContain(100);
+		expect(narrow.length).toBeLessThan(ticks.length);
+		expect(thinTicks(ticks, 'log', [LOG_FLOOR, 100], 2000, fmt, 6)).toEqual(ticks);
 	});
 
 	it('scale_zero_clamped', () => {

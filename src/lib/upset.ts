@@ -643,6 +643,38 @@ export function sizeTicks(kind: UpSetScale, top: number): number[] | undefined {
 	return out;
 }
 
+/**
+ * Drop ticks whose labels would collide on an axis `width` px long. Powers of ten win over 5s, 5s over 2s, so a narrow
+ * axis keeps 1, 10, 100 … and a wider one gains the in-between ticks. `label` renders a tick; `charPx` is the
+ * estimated width of one character. Input order is preserved.
+ */
+export function thinTicks(
+	ticks: number[],
+	kind: UpSetScale,
+	domain: [number, number],
+	width: number,
+	label: (t: number) => string,
+	charPx: number
+): number[] {
+	const x = sizeScale(kind).domain(domain).range([0, width]);
+	const rank = (t: number) => {
+		if (t <= 0) return 0;
+		const m = t / 10 ** Math.floor(Math.log10(t));
+		return m === 1 ? 0 : m === 5 ? 1 : 2;
+	};
+	const kept: { px: number; half: number }[] = [];
+	const keep = new Set<number>();
+	for (const t of [...ticks].sort((a, b) => rank(a) - rank(b))) {
+		const px = x(t);
+		const half = (label(t).length * charPx) / 2 + 3;
+		if (kept.every((k) => Math.abs(k.px - px) >= k.half + half)) {
+			kept.push({ px, half });
+			keep.add(t);
+		}
+	}
+	return ticks.filter((t) => keep.has(t));
+}
+
 // ---- export helpers --------------------------------------------------------------------------
 
 /** The rows behind an intersection (empty for an unknown id, or for precomputed input / `keepItems: false`). */
