@@ -1,6 +1,6 @@
 {
 	"name": "layerchart-upset",
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"description": "UpSet plots for Svelte 5, built on LayerChart",
 	"license": "MIT",
 	"repository": {
