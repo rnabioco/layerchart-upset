@@ -89,7 +89,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `footer` (snippet) | | rendered below the plot with `{ shown, total, hidden }`, e.g. "the largest N of M combinations are drawn" |
 | `intersectionsTotal` | | precomputed input: how many intersections existed before you truncated the list (defaults to its length) |
 | `maxWidth` | – | number (px) or CSS length; wide plots scroll inside their own wrapper instead of overflowing the page |
-| `fit` `minCellSize` | `false` 12 | shrink `cellSize` toward `minCellSize` so the matrix fits its container; scrolls below the minimum |
+| `fit` `minCellSize` | `false` 12 | shrink `cellSize` toward `minCellSize` so the matrix fits its container; scrolls below the minimum. `fit="fill"` also pads with empty slots so a short list spans the container (cells never grow, rows keep their height) |
 | `intersections` `setSizes` `total` | – | precomputed input (see above) |
 | `tooltip` | true | `false` disables tooltips, `true` is the built-in one, a snippet replaces its content |
 | `describe`, `onhover` | | tooltip / `aria-label` text, hover event |

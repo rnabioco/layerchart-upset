@@ -137,6 +137,20 @@
 	</section>
 
 	<section>
+		<h2>fit="fill": span the container</h2>
+		<p class="desc">
+			3 columns in a 700px container. <code>fit="fill"</code> pads with empty slots so the plot spans the container
+			without growing the rows; <code>showLabels="auto"</code> drops labels that would collide.
+		</p>
+		<div class="chart">
+			<div style="width: 700px" data-testid="fill-box">
+				<UpSet {data} sets={genres.slice(0, 4)} fit="fill" showLabels="auto" limit={3} />
+			</div>
+		</div>
+		<CodeBlock html={examples.code['fit="fill": span the container']} />
+	</section>
+
+	<section>
 		<h2>Percent axis</h2>
 		<p class="desc">
 			<code>normalize="total"</code> labels the axes and bar labels as a share of all items. Without a known total

@@ -62,6 +62,21 @@ const pageScroll = () =>
 	ok('fit_shrinks_cells_to_the_minimum');
 }
 
+// fit_fill_spans_the_container
+{
+	const sec = section('fit="fill"');
+	const m = await sec.evaluate((el) => ({
+		box: el.querySelector('[data-testid="fill-box"]').getBoundingClientRect().width,
+		plot: el.querySelector('.upset').getBoundingClientRect().width,
+		bars: el.querySelectorAll('[data-upset-bar]').length,
+		bar: el.querySelector('[data-upset-bar]').getBoundingClientRect().width
+	}));
+	assert.equal(m.bars, 3, 'real columns unchanged');
+	assert.ok(m.box - m.plot < 28 + 1, `plot ${m.plot} leaves more than a cell of the ${m.box}px container empty`);
+	assert.ok(m.bar <= 28, `cells did not grow (bar ${m.bar})`);
+	ok('fit_fill_spans_the_container');
+}
+
 // default_layout_is_unchanged
 {
 	await page.goto(`${base}/gallery/basics`, { waitUntil: 'networkidle' });
