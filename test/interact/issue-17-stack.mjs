@@ -53,4 +53,18 @@ ok('stack_keeps_selection');
 assert.match(await first.getAttribute('data-tip'), / · (1990s|2000s|2010s): \d+/);
 ok('stack_counts_in_tooltip_text');
 
+// stack_from_precomputed_segments
+{
+	const c = page.locator('[data-testid="stacked-counts"]');
+	const segs = await c.locator('[data-upset-stack]').evaluateAll((els) =>
+		els.map((e) => ({ cat: e.getAttribute('data-upset-stack'), id: e.getAttribute('data-id'), n: Number(e.getAttribute('data-n')) }))
+	);
+	const sum = (id, cat) => segs.filter((g) => g.id === id && (!cat || g.cat === cat)).reduce((a, g) => a + g.n, 0);
+	assert.equal(sum('A'), 40);
+	assert.equal(sum('A&B', 'SE'), 10);
+	assert.equal(sum('A&B', '(none)'), 8, 'shortfall against size is (none)');
+	assert.equal(sum('C'), 20);
+	ok('stack_from_precomputed_segments');
+}
+
 await browser.close();

@@ -584,3 +584,43 @@ describe('deviation', () => {
 		expect(r.intersections).toHaveLength(2);
 	});
 });
+
+describe('precomputed segments and counts', () => {
+	const input = [
+		{ sets: ['A'], size: 10, segments: { x: 6, y: 4 }, counts: { sig: 3 } },
+		{ sets: ['A', 'B'], size: 8, segments: { x: 2, y: 3 }, counts: { sig: 8 } },
+		{ sets: ['B'], size: 5 }
+	];
+	const r = fromIntersections(['A', 'B'], input);
+
+	it('stack_segments_come_from_the_intersections', () => {
+		const st = stackSegments(r, undefined);
+		expect(st.order).toEqual(['x', 'y', '(none)']);
+		expect(st.segments.get('A')).toEqual([
+			{ category: 'x', n: 6 },
+			{ category: 'y', n: 4 }
+		]);
+		// a shortfall against `size` is "(none)"
+		expect(st.segments.get('A&B')).toEqual([
+			{ category: 'x', n: 2 },
+			{ category: 'y', n: 3 },
+			{ category: '(none)', n: 3 }
+		]);
+		// no segments given: nothing to stack
+		expect(st.segments.get('B')).toEqual([]);
+	});
+
+	it('stack_order_is_respected', () => {
+		expect(stackSegments(r, undefined, ['y']).order.slice(0, 2)).toEqual(['y', 'x']);
+	});
+
+	it('query_counts_read_counts_without_a_filter', () => {
+		const c = queryCounts(r, [{ id: 'sig', color: 'red' }]);
+		expect([...c]).toEqual([['A', [3]], ['A&B', [8]], ['B', [0]]]);
+	});
+
+	it('invalid_segments_or_counts_throw', () => {
+		expect(() => fromIntersections(['A'], [{ sets: ['A'], size: 1, segments: { x: -1 } }])).toThrow(/segments/);
+		expect(() => fromIntersections(['A'], [{ sets: ['A'], size: 1, counts: { q: NaN } }])).toThrow(/counts/);
+	});
+});
