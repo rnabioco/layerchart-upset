@@ -1197,6 +1197,7 @@
 							class="clickable"
 							aria-hidden="true"
 							data-upset-column={d.id}
+							opacity={opacity(d.id)}
 							onclick={() => select(d)}
 							onpointerenter={(e: PointerEvent) => enter(d, e)}
 							onpointermove={(e: PointerEvent) => tipAtPointer(intersectionCtx(d), e)}
@@ -1212,7 +1213,6 @@
 									stroke={dot}
 									class={themed(dot, dotClass)}
 									strokeWidth={connectorWidth}
-									opacity={opacity(d.id)}
 								/>
 							{/if}
 							{#each d.sets as name (name)}
@@ -1222,7 +1222,6 @@
 									r={Math.min(w, h) * dotRadius}
 									fill={dot}
 									class={themed(dot, dotClass)}
-									fillOpacity={opacity(d.id)}
 								/>
 							{/each}
 						</g>
