@@ -1050,8 +1050,8 @@
 							<Text
 								value={axisFormat(t)}
 								x={xs(t)}
-								y={context.height}
-								dy={-2}
+								y={0}
+								dy={-4}
 								textAnchor="middle"
 								class="upset-label upset-set-tick"
 							/>
