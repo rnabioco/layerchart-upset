@@ -25,7 +25,7 @@ const clearVars = () => themed.evaluate((el) => el.removeAttribute('style'));
 
 const bars = themed.locator('[data-upset-bar]');
 const setBars = themed.locator('[data-upset-set-bar]');
-const dotOff = themed.locator('[data-upset-column] circle.upset-off');
+const dotOff = themed.locator('path.upset-off[data-upset-empty]');
 const dotOn = themed.locator('[data-upset-column] circle.upset-on');
 assert.ok((await bars.count()) > 3);
 

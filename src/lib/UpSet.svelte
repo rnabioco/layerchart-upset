@@ -13,6 +13,7 @@
 		sizeTicks,
 		thinTicks,
 		powerLabel,
+		dotsPath,
 		queryCounts,
 		stackSegments,
 		reportOf,
@@ -1167,6 +1168,22 @@
 						/>
 					{/each}
 
+					<!-- Empty cells: one path for the whole matrix (not one <circle> each); filled dots are drawn per column below. -->
+					<path
+						d={dotsPath(
+							result.intersections.flatMap((d) => {
+								const on = new Set(d.sets);
+								const cx = (xs(d.id) ?? 0) + w / 2;
+								return setNames.filter((n) => !on.has(n)).map((n): [number, number] => [cx, (ys(n) ?? 0) + h / 2]);
+							}),
+							Math.min(w, h) * dotRadius
+						)}
+						fill={inactiveColor}
+						class={themed(inactiveColor, 'upset-off')}
+						data-upset-empty=""
+						pointer-events="none"
+					/>
+
 					{#each result.intersections as d (d.id)}
 						{@const cx = (xs(d.id) ?? 0) + w / 2}
 						{@const dot = colorOf(d)}
@@ -1198,15 +1215,14 @@
 									opacity={opacity(d.id)}
 								/>
 							{/if}
-							{#each setNames as name (name)}
-								{@const on = d.sets.includes(name)}
+							{#each d.sets as name (name)}
 								<Circle
 									{cx}
 									cy={(ys(name) ?? 0) + h / 2}
 									r={Math.min(w, h) * dotRadius}
-									fill={on ? dot : inactiveColor}
-									class={on ? themed(dot, dotClass) : themed(inactiveColor, 'upset-off')}
-									fillOpacity={on ? opacity(d.id) : 1}
+									fill={dot}
+									class={themed(dot, dotClass)}
+									fillOpacity={opacity(d.id)}
 								/>
 							{/each}
 						</g>
