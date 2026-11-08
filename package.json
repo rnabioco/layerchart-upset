@@ -20,7 +20,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "vitest run src",
-		"test:interact": "node test/interact/run.mjs"
+		"test:interact": "node test/interact/run.mjs",
+		"bench": "node bench/run.mjs"
 	},
 	"files": [
 		"dist",
