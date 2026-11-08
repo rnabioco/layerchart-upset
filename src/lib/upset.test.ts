@@ -18,6 +18,7 @@ import {
 	sizeTicks,
 	thinTicks,
 	powerLabel,
+	dotsPath,
 	sizeTop
 } from './upset.js';
 
@@ -647,5 +648,14 @@ describe('powerLabel', () => {
 		expect([0, 2, 50, 1500, -10, NaN].map((n) => powerLabel(n, f))).toEqual(
 			['<0>', '<2>', '<50>', '<1500>', '<-10>', '<NaN>']
 		);
+	});
+});
+
+describe('dotsPath', () => {
+	it('draws one closed circle per point', () => {
+		expect(dotsPath([], 5)).toBe('');
+		const d = dotsPath([[10, 20], [30, 20]], 4);
+		expect(d.match(/M/g)).toHaveLength(2);
+		expect(d.startsWith('M6 20a4 4 0 1 0 8 0a4 4 0 1 0 -8 0')).toBe(true);
 	});
 });

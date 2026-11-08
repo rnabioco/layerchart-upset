@@ -643,6 +643,18 @@ export function sizeTicks(kind: UpSetScale, top: number): number[] | undefined {
 	return out;
 }
 
+/**
+ * One SVG path `d` drawing a circle of radius `r` at each `[cx, cy]`. Replaces thousands of <circle> nodes (the empty
+ * cells of the membership matrix) with a single element.
+ */
+export function dotsPath(points: Iterable<[number, number]>, r: number): string {
+	const f = (n: number) => String(Math.round(n * 100) / 100);
+	const d = f(2 * r);
+	let out = '';
+	for (const [cx, cy] of points) out += `M${f(cx - r)} ${f(cy)}a${f(r)} ${f(r)} 0 1 0 ${d} 0a${f(r)} ${f(r)} 0 1 0 -${d} 0`;
+	return out;
+}
+
 const SUPER: Record<string, string> = {
 	'0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻'
 };
