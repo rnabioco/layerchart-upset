@@ -79,6 +79,24 @@
 	</section>
 
 	<section>
+		<h2>Power-of-ten ticks</h2>
+		<p class="desc">
+			<code>powerTicks</code> labels the power-of-ten ticks of a log axis as <code>10³</code> instead of
+			<code>1000</code>. Bar labels keep their numbers.
+		</p>
+		<div class="chart">
+			<UpSet
+				intersections={decadeCounts.filter((d) => d.size > 0)}
+				sets={decades}
+				setSizes={decadeSets}
+				scale="log"
+				powerTicks
+			/>
+		</div>
+		<CodeBlock html={examples.code["Power-of-ten ticks"]} />
+	</section>
+
+	<section>
 		<h2>Deviation from independence</h2>
 		<p class="desc">
 			<code>sortIntersectionsBy="deviation"</code> puts the combinations that occur more often than chance first;

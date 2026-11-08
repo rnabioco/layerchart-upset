@@ -95,6 +95,7 @@ Each bar is a `role="button"` with `aria-label`, `aria-pressed`, and is a Tab st
 | `describe`, `onhover` | | tooltip / `aria-label` text, hover event |
 | `setLabels` `emphasizedSets` `emphasisMarker` `maxLabelLength` | | row labels |
 | `showSetSizes` `minSlots` `yTicks` `setTicks` `formatSize` | | layout / axis |
+| `powerTicks` | `false` | on a log/symlog axis, label power-of-ten ticks as `10⁶` instead of `1000000` (bar labels unchanged) |
 
 `computeUpset(data, sets, options)` is exported for use without the component. See the [Gallery](gallery/index.md) for every option in action.
 
