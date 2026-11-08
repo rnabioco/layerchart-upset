@@ -6,6 +6,30 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-08
+
+### Added
+
+- `powerTicks` labels the power-of-ten ticks of a log or symlog axis as `10⁶` instead of `1000000`, on both the
+  intersection-size and set-size axes. Other ticks and bar labels keep `formatSize`. (#54)
+
+### Changed
+
+- A selected or hovered column dims the others with one opacity on the column's matrix group instead of one per
+  connector line and dot, so the dimmed connector and its dots now fade as a unit. At 1000 columns a click paints in
+  about half the time. (#57)
+
+### Fixed
+
+- Set-size axis tick labels no longer overplot the bar count labels: they are drawn above the first row. (#53)
+- Size bars and their count labels are centred on the matrix columns and rows; the outer bars no longer drift a few
+  pixels off the dots. (#55)
+
+### Performance
+
+- The empty cells of the membership matrix are drawn as one path instead of a `<circle>` each, roughly halving first
+  render time on plots with hundreds of columns. (#56)
+
 ## [0.8.0] - 2026-11-06
 
 ### Added
@@ -232,7 +256,8 @@ Initial release.
   GitHub Pages.
 - CI (type check, unit tests, build + publint) and Dependabot for npm and GitHub Actions.
 
-[Unreleased]: https://github.com/rnabioco/layerchart-upset/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/rnabioco/layerchart-upset/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.5.0...v0.6.0
