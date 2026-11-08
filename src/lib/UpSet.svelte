@@ -888,7 +888,7 @@
 		<Chart
 			data={result.intersections}
 			x="id"
-			xScale={scaleBand().padding(barPadding)}
+			xScale={scaleBand().paddingInner(barPadding).paddingOuter(barPadding / 2)}
 			xDomain={ids}
 			y="size"
 			yScale={sizeScale(scale)}
@@ -1047,7 +1047,7 @@
 			<Chart
 				data={result.sets}
 				y="name"
-				yScale={scaleBand().padding(barPadding)}
+				yScale={scaleBand().paddingInner(barPadding).paddingOuter(barPadding / 2)}
 				yDomain={setNames}
 				x="size"
 				xScale={sizeScale(setKind)}
