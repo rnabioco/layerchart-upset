@@ -643,6 +643,18 @@ export function sizeTicks(kind: UpSetScale, top: number): number[] | undefined {
 	return out;
 }
 
+const SUPER: Record<string, string> = {
+	'0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻'
+};
+
+/** An exact power of ten as `10⁶`; anything else (0, 2, 50, 1.5e6) goes through `fallback`. */
+export function powerLabel(n: number, fallback: (n: number) => string = String): string {
+	if (!(n > 0) || !Number.isFinite(n)) return fallback(n);
+	const e = Math.round(Math.log10(n));
+	if (10 ** e !== n) return fallback(n);
+	return '10' + [...String(e)].map((c) => SUPER[c]).join('');
+}
+
 /**
  * Drop ticks whose labels would collide on an axis `width` px long. Powers of ten win over 5s, 5s over 2s, so a narrow
  * axis keeps 1, 10, 100 … and a wider one gains the in-between ticks. `label` renders a tick; `charPx` is the

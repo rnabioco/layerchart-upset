@@ -17,6 +17,7 @@ import {
 	sizeScale,
 	sizeTicks,
 	thinTicks,
+	powerLabel,
 	sizeTop
 } from './upset.js';
 
@@ -633,5 +634,18 @@ describe('precomputed segments and counts', () => {
 	it('invalid_segments_or_counts_throw', () => {
 		expect(() => fromIntersections(['A'], [{ sets: ['A'], size: 1, segments: { x: -1 } }])).toThrow(/segments/);
 		expect(() => fromIntersections(['A'], [{ sets: ['A'], size: 1, counts: { q: NaN } }])).toThrow(/counts/);
+	});
+});
+
+describe('powerLabel', () => {
+	it('writes exact powers of ten as 10^n', () => {
+		expect([1, 10, 100, 1e6, 1e12].map((n) => powerLabel(n))).toEqual(['10⁰', '10¹', '10²', '10⁶', '10¹²']);
+		expect(powerLabel(0.01)).toBe('10⁻²');
+	});
+	it('sends everything else to the fallback', () => {
+		const f = (n: number) => `<${n}>`;
+		expect([0, 2, 50, 1500, -10, NaN].map((n) => powerLabel(n, f))).toEqual(
+			['<0>', '<2>', '<50>', '<1500>', '<-10>', '<NaN>']
+		);
 	});
 });

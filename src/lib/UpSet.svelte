@@ -12,6 +12,7 @@
 		sizeScale,
 		sizeTicks,
 		thinTicks,
+		powerLabel,
 		queryCounts,
 		stackSegments,
 		reportOf,
@@ -64,6 +65,11 @@
 		setTicks?: number[];
 		/** Number formatter for the y axis and bar labels. */
 		formatSize?: (n: number) => string;
+		/**
+		 * Label the ticks of a log/symlog axis that fall on a power of ten as `10⁶` instead of `1000000`. Other ticks
+		 * (2, 5, 0) and bar labels keep `formatSize`; a linear axis and `normalize="total"` are unaffected.
+		 */
+		powerTicks?: boolean;
 		/**
 		 * Subsets to highlight inside every column: each query draws an overlay bar (same width as the size bar)
 		 * as tall as the number of the column's rows that pass `filter`. Overlays are painted in array order, so
@@ -207,6 +213,7 @@
 		yTicks,
 		setTicks,
 		formatSize = (n: number) => String(n),
+		powerTicks = false,
 		cellSize: cellSizeProp = 28,
 		maxWidth,
 		fit = false,
@@ -358,6 +365,12 @@
 			: formatSize
 	);
 
+	// Axis tick labels only; bar labels keep axisFormat.
+	const tickFormat = (kind: UpSetScale) =>
+		powerTicks && !percent && kind !== 'linear' ? (n: number) => powerLabel(n, axisFormat) : axisFormat;
+	const yTickFormat = $derived(tickFormat(scale));
+	const setTickFormat = $derived(tickFormat(setKind));
+
 	const yMax = $derived(yTicks ? Math.max(topSize, ...yTicks) : topSize);
 	const yDomain = $derived<[number, number | null]>(
 		scale === 'linear' ? [0, yTicks ? yMax : null] : sizeDomain(scale, yMax)
@@ -386,7 +399,7 @@
 						setKind,
 						[setDomain[1], setDomain[0]],
 						Math.max(0, setBarWidth - 36),
-						axisFormat,
+						setTickFormat,
 						fontSize * 0.6 * 0.92
 					))
 	);
@@ -891,7 +904,7 @@
 						placement="left"
 						label={intersectionLabel}
 						ticks={yTickList}
-						format={(v: number) => axisFormat(v)}
+						format={(v: number) => yTickFormat(v)}
 						grid={{ class: 'upset-grid' }}
 						rule={false}
 					/>
@@ -1048,7 +1061,7 @@
 						{#each setTickList as t (t)}
 							<Line x1={xs(t)} x2={xs(t)} y1={0} y2={context.height} class="upset-grid" data-upset-set-tick={t} />
 							<Text
-								value={axisFormat(t)}
+								value={setTickFormat(t)}
 								x={xs(t)}
 								y={0}
 								dy={-4}
