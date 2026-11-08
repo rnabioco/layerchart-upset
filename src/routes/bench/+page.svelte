@@ -4,7 +4,7 @@
 	import { tick } from 'svelte';
 	import { UpSet, computeUpset } from '../../lib/index.js';
 
-	let cfg = $state<{ data: Record<string, unknown>[]; sets: string[]; cols: number } | null>(null);
+	let cfg = $state<{ data: Record<string, unknown>[]; sets: string[]; cols: number; props: Record<string, unknown> } | null>(null);
 
 	function makeRows(rows: number, sets: string[], seed = 7) {
 		const rand = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
@@ -20,7 +20,7 @@
 		step(n);
 	});
 
-	async function bench(o: { rows: number; sets: number; cols: number }) {
+	async function bench(o: { rows: number; sets: number; cols: number; props?: Record<string, unknown> }) {
 		const names = Array.from({ length: o.sets }, (_, i) => `S${i + 1}`);
 		const data = makeRows(o.rows, names);
 
@@ -32,12 +32,17 @@
 		await tick();
 		await frames();
 		t = performance.now();
-		cfg = { data, sets: names, cols: o.cols };
+		cfg = { data, sets: names, cols: o.cols, props: o.props ?? {} };
 		await tick();
 		const scriptMs = performance.now() - t; // Svelte + LayerChart work until the DOM is updated
 		await frames();
 		const renderMs = performance.now() - t; // ... through the next paints
 		const nodes = document.querySelectorAll('.bench svg *').length;
+		const byKind: Record<string, number> = {};
+		for (const e of document.querySelectorAll('.bench svg *')) {
+			const k = e.tagName + (e.getAttribute('data-upset-bar') != null ? '.bar' : '');
+			byKind[k] = (byKind[k] ?? 0) + 1;
+		}
 
 		const bar = document.querySelector<SVGElement>('.bench [data-upset-bar]');
 		t = performance.now();
@@ -46,7 +51,7 @@
 		await frames();
 		const selectMs = performance.now() - t;
 
-		return { computeMs, scriptMs, renderMs, selectMs, nodes, columns: r.intersections.length };
+		return { computeMs, scriptMs, renderMs, selectMs, nodes, byKind, columns: r.intersections.length };
 	}
 	if (typeof window !== 'undefined') (window as unknown as { __bench: typeof bench }).__bench = bench;
 </script>
@@ -55,6 +60,6 @@
 
 <div class="bench">
 	{#if cfg}
-		<UpSet data={cfg.data} sets={cfg.sets} limit={cfg.cols} tooltip={false} />
+		<UpSet data={cfg.data} sets={cfg.sets} limit={cfg.cols} tooltip={false} {...cfg.props} />
 	{/if}
 </div>
