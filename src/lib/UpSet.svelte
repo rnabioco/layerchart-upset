@@ -2,6 +2,9 @@
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
 	import { Axis, Chart, Circle, Group, Layer, Line, Rect, Text } from 'layerchart';
+	import { barKeydown as keyNav } from './keynav.js';
+	import FilterBar from './FilterBar.svelte';
+	import StackLegend from './StackLegend.svelte';
 	import { scaleBand, type ScaleBand, type ScaleContinuousNumeric } from 'd3-scale';
 	import {
 		clampSize,
@@ -568,20 +571,6 @@
 		}
 		onfilterchange?.(next, previous);
 	}
-	const numberFilter = (key: 'minSize' | 'minDegree' | 'maxDegree' | 'limit') => (e: Event) => {
-		const el = e.currentTarget as HTMLInputElement;
-		const raw = el.value.trim();
-		const n = Number(raw);
-		changeFilters({ [key]: raw === '' || !Number.isFinite(n) ? undefined : n });
-		// controlled: the input shows what the owner holds, not what was typed
-		if (controlled) el.value = String({ minSize, minDegree, maxDegree, limit }[key] ?? '');
-	};
-	function toggleSetVisible(e: Event, name: string) {
-		changeFilters({
-			hiddenSets: hiddenSets.includes(name) ? hiddenSets.filter((s) => s !== name) : [...hiddenSets, name]
-		});
-		if (controlled) (e.currentTarget as HTMLInputElement).checked = !hiddenSets.includes(name);
-	}
 	const filtersActive = $derived(
 		minSize != null || maxSize != null || minDegree != null || maxDegree != null || limit != null || hiddenSets.length > 0
 	);
@@ -627,28 +616,14 @@
 		onsetselect?.(next ? info : null, previous);
 	}
 	function setKeydown(e: KeyboardEvent, name: string) {
-		if (e.key === 'Enter' || e.key === ' ') {
-			e.preventDefault();
-			selectSet(name);
-			return;
-		}
-		if (e.key === 'Escape') {
-			e.preventDefault(); // handled here, not again by the window listener
-			clearAll();
-			return;
-		}
-		const bars = Array.from(root?.querySelectorAll<SVGElement>('[data-upset-set-bar]') ?? []);
-		const at = bars.indexOf(e.currentTarget as SVGElement);
-		const next =
-			e.key === 'ArrowDown' ? at + 1
-			: e.key === 'ArrowUp' ? at - 1
-			: e.key === 'Home' ? 0
-			: e.key === 'End' ? bars.length - 1
-			: null;
-		if (next != null && bars[next]) {
-			e.preventDefault();
-			bars[next].focus();
-		}
+		keyNav(e, {
+			root,
+			selector: '[data-upset-set-bar]',
+			prev: 'ArrowUp',
+			next: 'ArrowDown',
+			activate: () => selectSet(name),
+			clear: clearAll
+		});
 	}
 
 	// ---- tooltip -------------------------------------------------------------------------
@@ -708,28 +683,14 @@
 			null
 	);
 	function barKeydown(e: KeyboardEvent, i: Intersection<T>) {
-		if (e.key === 'Enter' || e.key === ' ') {
-			e.preventDefault();
-			select(i);
-			return;
-		}
-		if (e.key === 'Escape') {
-			e.preventDefault(); // handled here, not again by the window listener
-			clearAll();
-			return;
-		}
-		const bars = Array.from(root?.querySelectorAll<SVGElement>('[data-upset-bar]') ?? []);
-		const at = bars.indexOf(e.currentTarget as SVGElement);
-		const next =
-			e.key === 'ArrowRight' ? at + 1
-			: e.key === 'ArrowLeft' ? at - 1
-			: e.key === 'Home' ? 0
-			: e.key === 'End' ? bars.length - 1
-			: null;
-		if (next != null && bars[next]) {
-			e.preventDefault();
-			bars[next].focus();
-		}
+		keyNav(e, {
+			root,
+			selector: '[data-upset-bar]',
+			prev: 'ArrowLeft',
+			next: 'ArrowRight',
+			activate: () => select(i),
+			clear: clearAll
+		});
 	}
 	function barFocus(i: Intersection<T>, e: FocusEvent) {
 		focused = i.id;
@@ -743,95 +704,43 @@
 		if (hovered == null) tip = null;
 		onhover?.(null);
 	}
+
+	const setCtx = (s: SetInfo): TooltipContext<T> => ({
+		kind: 'set',
+		set: s,
+		text: `${labelOf(s.name)}: ${formatSize(s.size)}`
+	});
+	function setBarFocus(s: SetInfo, e: FocusEvent) {
+		tabSet = s.name;
+		// Keyboard focus only: a bar focused by a click must not keep dimming after it is deselected.
+		if ((e.currentTarget as Element).matches(':focus-visible')) setFocus(s.name);
+	}
+	function setBarEnter(s: SetInfo, e: PointerEvent) {
+		setHover(s.name);
+		tipAtPointer(setCtx(s), e);
+	}
+	function setBarLeave() {
+		setHover(null);
+		tip = focused == null ? null : tip;
+	}
 </script>
 
 <svelte:window onkeydown={windowKeydown} onpointerdowncapture={windowPointerdown} />
 
 {#if stackProp?.legend && stackData}
-	<ul class="upset-legend" aria-label="Stack categories" data-upset-legend="">
-		{#each stackData.order as c (c)}
-			<li data-upset-legend-item={c}>
-				<span class="upset-swatch" style:background={stackColor(c)}></span>{c}
-			</li>
-		{/each}
-	</ul>
+	<StackLegend categories={stackData.order} colorOf={stackColor} />
 {/if}
 
 {#if filterControls}
-	<div class="upset-filters" role="group" aria-label="Filters" data-upset-filters="">
-		<label>
-			min size
-			<input
-				type="number"
-				min="0"
-				value={minSize ?? ''}
-				placeholder="1"
-				data-upset-filter="minSize"
-				onchange={numberFilter('minSize')}
-			/>
-		</label>
-		<label>
-			min degree
-			<input
-				type="number"
-				min="1"
-				value={minDegree ?? ''}
-				placeholder="1"
-				data-upset-filter="minDegree"
-				onchange={numberFilter('minDegree')}
-			/>
-		</label>
-		<label>
-			max degree
-			<input
-				type="number"
-				min="1"
-				value={maxDegree ?? ''}
-				data-upset-filter="maxDegree"
-				onchange={numberFilter('maxDegree')}
-			/>
-		</label>
-		<label>
-			limit
-			<input
-				type="number"
-				min="1"
-				value={limit ?? ''}
-				data-upset-filter="limit"
-				onchange={numberFilter('limit')}
-			/>
-		</label>
-		<span class="upset-filter-sets">
-			{#each sets as name (name)}
-				<label>
-					<input
-						type="checkbox"
-						checked={!hiddenSets.includes(name)}
-						disabled={!hiddenSets.includes(name) && visibleSets.length <= 1}
-						data-upset-filter-set={name}
-						onchange={(e) => toggleSetVisible(e, name)}
-					/>
-					{labelOf(name)}
-				</label>
-			{/each}
-		</span>
-		<button
-			type="button"
-			disabled={!filtersActive}
-			data-upset-filter-reset=""
-			onclick={() =>
-				changeFilters({
-					minSize: undefined,
-					maxSize: undefined,
-					minDegree: undefined,
-					maxDegree: undefined,
-					limit: undefined,
-					hiddenSets: []
-				})}
-		>
-			reset
-		</button>
-	</div>
+	<FilterBar
+		{sets}
+		{hiddenSets}
+		values={{ minSize, minDegree, maxDegree, limit }}
+		active={filtersActive}
+		{controlled}
+		{labelOf}
+		onchange={changeFilters}
+	/>
 {/if}
 
 <div
@@ -1092,22 +1001,11 @@
 								data-n={s.size}
 								onclick={() => selectSet(s.name)}
 								onkeydown={(e: KeyboardEvent) => setKeydown(e, s.name)}
-								onfocus={(e: FocusEvent) => {
-									tabSet = s.name;
-									// Keyboard focus only: a bar focused by a click must not keep dimming after it is deselected.
-									if ((e.currentTarget as Element).matches(':focus-visible')) setFocus(s.name);
-								}}
+								onfocus={(e: FocusEvent) => setBarFocus(s, e)}
 								onblur={() => setFocus(null)}
-								onpointerenter={(e: PointerEvent) => {
-									setHover(s.name);
-									tipAtPointer({ kind: 'set', set: s, text: `${labelOf(s.name)}: ${formatSize(s.size)}` }, e);
-								}}
-								onpointermove={(e: PointerEvent) =>
-									tipAtPointer({ kind: 'set', set: s, text: `${labelOf(s.name)}: ${formatSize(s.size)}` }, e)}
-								onpointerleave={() => {
-									setHover(null);
-									tip = focused == null ? null : tip;
-								}}
+								onpointerenter={(e: PointerEvent) => setBarEnter(s, e)}
+								onpointermove={(e: PointerEvent) => tipAtPointer(setCtx(s), e)}
+								onpointerleave={setBarLeave}
 							/>
 							<Text
 								value={axisFormat(s.size)}
@@ -1263,61 +1161,6 @@
 		align-self: end;
 		padding-left: 4px;
 		opacity: 0.7;
-	}
-	.upset-legend {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 2px 14px;
-		margin: 0 0 8px;
-		padding: 0 0 0 2px;
-		list-style: none;
-		font-size: 0.9em;
-		color: var(--upset-text, currentColor);
-	}
-	.upset-legend li {
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-	}
-	.upset-swatch {
-		width: 0.9em;
-		height: 0.9em;
-		border-radius: 2px;
-	}
-	.upset-filters {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 6px 14px;
-		margin-bottom: 8px;
-		font-size: 0.9em;
-		color: var(--upset-control-fg, var(--upset-text, currentColor));
-	}
-	.upset-filters input[type='number'] {
-		width: 4.5em;
-		margin-left: 4px;
-		font: inherit;
-		color: inherit;
-		background: transparent;
-		border: 1px solid var(--upset-control-border, var(--upset-grid, color-mix(in srgb, currentColor 25%, transparent)));
-		border-radius: 3px;
-	}
-	.upset-filter-sets {
-		display: inline-flex;
-		flex-wrap: wrap;
-		gap: 2px 10px;
-	}
-	.upset-filters button {
-		font: inherit;
-		color: inherit;
-		background: transparent;
-		cursor: pointer;
-		border: 1px solid var(--upset-control-border, var(--upset-grid, color-mix(in srgb, currentColor 25%, transparent)));
-		border-radius: 3px;
-	}
-	.upset-filters button:disabled {
-		opacity: 0.4;
-		cursor: default;
 	}
 	.upset-annotation-row {
 		position: relative;
