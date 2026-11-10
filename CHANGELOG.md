@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-10
+
+### Changed
+
+- Internal: the matrix column wrapper is LayerChart's `Group` instead of a raw `<g>`, and the filter bar, stack legend
+  and bar keyboard handling moved out of `UpSet.svelte` into `FilterBar.svelte`, `StackLegend.svelte` and `keynav.ts`.
+  No change to props, markup, `data-*` attributes or behavior. (#61, #62)
+
 ## [0.9.0] - 2026-11-08
 
 ### Added
@@ -256,7 +264,8 @@ Initial release.
   GitHub Pages.
 - CI (type check, unit tests, build + publint) and Dependabot for npm and GitHub Actions.
 
-[Unreleased]: https://github.com/rnabioco/layerchart-upset/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/rnabioco/layerchart-upset/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/rnabioco/layerchart-upset/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/rnabioco/layerchart-upset/compare/v0.6.0...v0.7.0
