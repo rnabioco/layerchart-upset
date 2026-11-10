@@ -16,7 +16,7 @@ const bars = await chart.locator('[data-upset-column]').evaluateAll((els) =>
 	els.map((e) => ({ id: e.getAttribute('data-upset-column'), r: e.getBoundingClientRect().toJSON() }))
 );
 const boxes = await chart.locator('[data-upset-annotation]').evaluateAll((els) =>
-	els.map((e) => ({ id: e.getAttribute('data-upset-annotation'), n: e.querySelectorAll('svg[data-boxplot] rect').length, r: e.getBoundingClientRect().toJSON() }))
+	els.map((e) => ({ id: e.getAttribute('data-upset-annotation'), n: e.querySelectorAll('[data-boxplot] rect').length, r: e.getBoundingClientRect().toJSON() }))
 );
 assert.equal(boxes.length, bars.length);
 for (const b of boxes) {

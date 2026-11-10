@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends Record<string, unknown> = Record<string, unknown>">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { Axis, Chart, Circle, Layer, Line, Rect, Text } from 'layerchart';
+	import { Axis, Chart, Circle, Group, Layer, Line, Rect, Text } from 'layerchart';
 	import { scaleBand, type ScaleBand, type ScaleContinuousNumeric } from 'd3-scale';
 	import {
 		clampSize,
@@ -1193,7 +1193,7 @@
 						{@const bottom = Math.max(...rows)}
 						<!-- Mouse target only: the focusable control for each column is its bar. -->
 						<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-						<g
+						<Group
 							class="clickable"
 							aria-hidden="true"
 							data-upset-column={d.id}
@@ -1224,7 +1224,7 @@
 									class={themed(dot, dotClass)}
 								/>
 							{/each}
-						</g>
+						</Group>
 					{/each}
 				</Layer>
 			{/snippet}
