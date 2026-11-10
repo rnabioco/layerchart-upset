@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Chart, Circle, Layer, Line, Rect } from 'layerchart';
 	import { UpSet, computeUpset, summarize } from '../../../lib/index.js';
 	import { genres, makeData } from '../../demo-data.js';
 	import CodeBlock from '../CodeBlock.svelte';
@@ -93,22 +94,22 @@
 					{@const s = ratings.get(intersection.id)}
 					{@const y = (v: number) => height - 4 - ((v - lo) / (hi - lo)) * (height - 8)}
 					{#if s && s.n > 0}
-						<svg {width} {height} style="display:block" data-boxplot>
-							<line x1={width / 2} x2={width / 2} y1={y(s.whiskerLow)} y2={y(s.whiskerHigh)} stroke="currentColor" />
-							<rect
+						<div style:width="{width}px" style:height="{height}px" data-boxplot><Chart><Layer type="svg">
+							<Line x1={width / 2} x2={width / 2} y1={y(s.whiskerLow)} y2={y(s.whiskerHigh)} stroke="currentColor" />
+							<Rect
 								x={width * 0.2}
 								y={y(s.q3)}
 								width={width * 0.6}
 								height={Math.max(1, y(s.q1) - y(s.q3))}
 								fill="var(--upset-bar, steelblue)"
-								fill-opacity="0.45"
+								fillOpacity={0.45}
 								stroke="currentColor"
 							/>
-							<line x1={width * 0.2} x2={width * 0.8} y1={y(s.median)} y2={y(s.median)} stroke="currentColor" stroke-width="2" />
+							<Line x1={width * 0.2} x2={width * 0.8} y1={y(s.median)} y2={y(s.median)} stroke="currentColor" strokeWidth={2} />
 							{#each s.outliers as o}
-								<circle cx={width / 2} cy={y(o)} r="1.5" fill="none" stroke="currentColor" />
+								<Circle cx={width / 2} cy={y(o)} r={1.5} fill="none" stroke="currentColor" />
 							{/each}
-						</svg>
+						</Layer></Chart></div>
 					{/if}
 				{/snippet}
 			</UpSet>
